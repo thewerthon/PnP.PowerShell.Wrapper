@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Execute",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/0 - Main Script.ps1",
+            "args": []
+        }
+    ]
+}
