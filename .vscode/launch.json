@@ -5,7 +5,7 @@
             "name": "Execute",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/0 - Main Script.ps1",
+            "script": "${workspaceFolder}\\Scripts\\Tests.ps1",
             "args": []
         }
     ]

@@ -1,18 +1,27 @@
 Function Test-Tenant {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Tenant,
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Tenant,
         [Switch]$Silent
     )
 
-    If (-Not ((Test-SingleObject $Tenant) -And (Test-Properties $Tenant Slug, Name, Domain, TenantID, ClientID))) {
+    Try {
 
-        Write-Message "Invalid tenant." -Color "Red" -Silent:$Silent
+        If (-Not ((Test-SingleObject $Tenant -Silent:$Silent) -And (Test-Properties $Tenant Slug, Name, Domain, TenantID, ClientID -Silent:$Silent))) {
+
+            Write-Message "Invalid tenant." -Color "Red" -Silent:$Silent
+            Return $False
+
+        } Else {
+
+            Return $True
+
+        }
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
-
-    } Else {
-
-        Return $True
 
     }
 
@@ -25,24 +34,33 @@ Function Test-TenantConnection {
         [Switch]$Silent
     )
     
-    If (-Not (Test-Tenant $Tenant -Silent:$Silent)) { Return $False }
+    Try {
 
-    If (Test-Object $Global:CurrentTenant) {
+        If (-Not (Test-Tenant $Tenant -Silent:$Silent)) { Return $False }
 
-        If ($Tenant -Eq $Global:CurrentTenant ) {
+        If (Test-Object $Global:CurrentTenant -Silent:$Silent) {
 
-            Return $True
+            If ($Tenant -Eq $Global:CurrentTenant ) {
+
+                Return $True
+
+            } Else {
+
+                Write-Message "Not connected to $($Tenant.Name) tenant." -Color "Red" -Silent:$Silent
+                Return $False
+
+            }
 
         } Else {
 
-            Write-Message "Not connected to $($Tenant.Name) tenant." -Color "Red" -Silent:$Silent
+            Write-Message "Not connected to a tenant." -Color "Red" -Silent:$Silent
             Return $False
 
         }
 
-    } Else {
+    } Catch {
 
-        Write-Message "Not connected to a tenant." -Color "Red" -Silent:$Silent
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -66,7 +84,7 @@ Function Connect-Tenant {
         Invoke-Operation -Message "Connecting to tenant: $($Tenant.Name)" -Return:$Return -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
             $Password = ConvertTo-SecureString -String $Tenant.Domain -AsPlainText -Force
-            $Certificate = Get-ChildItem -Path "$PSScriptRoot" -Recurse | Where-Object Name -Like "$($Tenant.Name).pfx"
+            $Certificate = Get-ChildItem -Path (Get-Path("Certificates")) -Recurse | Where-Object Name -Like "$($Tenant.Name).pfx"
             Connect-PnPOnline -Tenant $Tenant.Domain -Url $Tenant.AdminUrl -ClientId $Tenant.ClientID -CertificatePath $Certificate.FullName -CertificatePassword $Password -ReturnConnection:$Return
             If (-Not $Return) { Set-Variable -Name "CurrentTenant" -Value $Tenant -Scope Global; Set-Variable -Name "CurrentSite" -Value (Get-PnPTenantSite $Tenant.AdminUrl) -Scope Global }
 
@@ -178,23 +196,16 @@ Function Set-Tenant {
 
     Param(
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Tenant,
-        [Object]$Connection,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
         [Switch]$Silent
     )
 
-    Begin {
-
-        $ParamConnection = $Connection
-        
-    }
-
     Process {
 
         Invoke-Operation -Message "Setting tenant: $($Tenant.Name)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
-            If (-Not $ParamConnection) { $Connection = Connect-Tenant $Tenant -Return -Silent } Else { $Connection = $ParamConnection }
+            $Connection = Connect-Tenant $Tenant -Return -Silent
 
             $TenantParams = @{
                 AllowCommentsTextOnEmailEnabled            = $True

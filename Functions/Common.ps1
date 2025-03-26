@@ -1,8 +1,33 @@
+Function Get-Root {
+
+    If ($PSScriptRoot) {
+        
+        Return Join-Path -Path "$PSScriptRoot" -ChildPath ".."
+    
+    } Else {
+        
+        Return (Get-Location).Path
+    
+    }
+
+}
+
+Function Get-Path {
+
+    Param(
+        [Parameter(Mandatory = $True)][String]$Path
+    )
+
+    Return Join-Path -Path (Get-Root) -ChildPath $Path
+
+}
+
 Function Test-Param {
 
     Param (
         [Parameter(Mandatory = $True)][String]$Name,
-        [Parameter(Mandatory = $True)][Hashtable]$Params
+        [Parameter(Mandatory = $True)][Hashtable]$Params,
+        [Switch]$Silent
     )
 
     Try {
@@ -11,6 +36,7 @@ Function Test-Param {
 
     } Catch {
 
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -20,7 +46,8 @@ Function Test-Param {
 Function Test-Object {
 
     Param(
-        [Object]$Object = $Null
+        [Object]$Object = $Null,
+        [Switch]$Silent
     )
 
     Try {
@@ -29,6 +56,7 @@ Function Test-Object {
 
     } Catch {
 
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -38,7 +66,8 @@ Function Test-Object {
 Function Test-NullObject {
 
     Param(
-        [Object]$Object = $Null
+        [Object]$Object = $Null,
+        [Switch]$Silent
     )
 
     Try {
@@ -47,6 +76,7 @@ Function Test-NullObject {
 
     } Catch {
 
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -56,7 +86,8 @@ Function Test-NullObject {
 Function Test-SingleObject {
 
     Param(
-        [Object]$Object = $Null
+        [Object]$Object = $Null,
+        [Switch]$Silent
     )
 
     Try {
@@ -65,6 +96,7 @@ Function Test-SingleObject {
 
     } Catch {
 
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -74,7 +106,8 @@ Function Test-SingleObject {
 Function Test-SingleOrNullObject {
 
     Param(
-        [Object]$Object = $Null
+        [Object]$Object = $Null,
+        [Switch]$Silent
     )
 
     Try {
@@ -83,6 +116,7 @@ Function Test-SingleOrNullObject {
 
     } Catch {
 
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -92,7 +126,8 @@ Function Test-SingleOrNullObject {
 Function Test-CollectionObject {
 
     Param(
-        [Object]$Object = $Null
+        [Object]$Object = $Null,
+        [Switch]$Silent
     )
 
     Try {
@@ -101,6 +136,7 @@ Function Test-CollectionObject {
 
     } Catch {
 
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -110,7 +146,8 @@ Function Test-CollectionObject {
 Function Test-CollectionOrNullObject {
 
     Param(
-        [Object]$Object = $Null
+        [Object]$Object = $Null,
+        [Switch]$Silent
     )
 
     Try {
@@ -119,6 +156,7 @@ Function Test-CollectionOrNullObject {
 
     } Catch {
 
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -130,17 +168,27 @@ Function Test-Properties {
     Param (
         [Parameter(Mandatory = $True)][Object]$Object,
         [Parameter(Mandatory = $True, ValueFromRemainingArguments = $True)][String[]]$Properties,
-        [Switch]$AllowNull
+        [Switch]$AllowNull,
+        [Switch]$Silent
     )
 
-    ForEach ($Property in $Properties) {
+    Try {
 
-        If (-Not ($Object.PSObject.Properties.Name -Contains $Property)) { Return $False }
-        If (-Not $AllowNull -And $Null -Eq $Object.$Property) { Return $False }
+        ForEach ($Property in $Properties) {
+
+            If (-Not ($Object.PSObject.Properties.Name -Contains $Property)) { Return $False }
+            If (-Not $AllowNull -And $Null -Eq $Object.$Property) { Return $False }
+
+        }
+
+        Return $True
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
 
     }
-
-    Return $True
 
 }
 

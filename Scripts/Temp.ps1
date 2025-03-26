@@ -1,8 +1,3 @@
-# Get-PnPWeb => Site Configs
-# Get-PnPSubWeb => Subsite Configs
-# Get-PnPTenantCdnEnabled -CdnType Public
-# Get-PnPNavigationNode
-
 # Get-PnPPage
 # Get-PnPPageComponent
 # Get-PnPFeature
@@ -14,21 +9,7 @@
 # Get-PnPFolderSharingLink
 # Get-PnPSearchConfiguration
 # Get-PnPSearchSettings
-# Configure Personal Sites
-
-# Invoke Testing
-Function Invoke-Testing {
-
-    # Connect Tenant
-    $Tenants = Get-Tenants
-    $Tenant = $Tenants[0]
-    $Tenant | Connect-Tenant
-
-    # Connect Site
-    $Sites = Get-Sites -SharePoint
-    $Sites | Set-Site -All
-
-}
+# Get-PnPTenantCdnEnabled -CdnType Public
 
 # Function to Get Fields
 Function Get-Fields {
@@ -53,14 +34,6 @@ Function Get-Views {
 
     $Views = Get-PnPView -List $List.Id | Where-Object { $_.Hidden -Eq $False }
     Return $Views
-
-}
-
-# Function to Get Lists
-Function Get-Lists {
-
-    $Lists = Get-PnPList | Where-Object { $_.Hidden -Eq $False -And $_.IsCatalog -Eq $False -And $_.BaseType -In ('DocumentLibrary', 'GenericList') }
-    Return $Lists
 
 }
 
@@ -107,32 +80,6 @@ Function Set-View {
         
     }
 
-}
-
-# Function to Set List
-Function Set-List {
-
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)]
-        [Object]$List
-    )
-
-    Process {
-
-        # Configure Columns Formats
-        Get-PnPField -List $List.Id | Where-Object { $_.InternalName -In $ColumnsMapping.Keys } | ForEach-Object {
-
-            If ($ColumnsMapping.ContainsKey($_.InternalName)) {
-
-                $_.Title = $ColumnsMapping[$_.InternalName].Title
-                $_.CustomFormatter = $ColumnsMapping[$_.InternalName].CustomFormatter
-
-            }
-
-        }
-
-    }
-    
 }
 
 # Configure Lists

@@ -1,18 +1,27 @@
 Function Test-Site {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
-    If (-Not ((Test-SingleObject $Site) -And (Test-Properties $Site Url, Title))) {
+    Try {
 
-        Write-Message "Invalid site." -Color "Red" -Silent:$Silent
+        If (-Not ((Test-SingleObject $Site -Silent:$Silent) -And (Test-Properties $Site Url, Title -Silent:$Silent))) {
+
+            Write-Message "Invalid site." -Color "Red" -Silent:$Silent
+            Return $False
+
+        } Else {
+
+            Return $True
+
+        }
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
-
-    } Else {
-
-        Return $True
 
     }
 
@@ -25,25 +34,34 @@ Function Test-SiteConnection {
         [Switch]$Silent
     )
     
-    If (-Not (Test-TenantConnection -Silent:$Silent)) { Return $False }
-    If (-Not (Test-Site $Site -Silent:$Silent)) { Return $False }
+    Try {
 
-    If (Test-Object $Global:CurrentSite) {
+        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return $False }
+        If (-Not (Test-Site $Site -Silent:$Silent)) { Return $False }
 
-        If ($Site -Eq $Global:CurrentSite ) {
+        If (Test-Object $Global:CurrentSite -Silent:$Silent) {
 
-            Return $True
+            If ($Site -Eq $Global:CurrentSite ) {
+
+                Return $True
+
+            } Else {
+
+                Write-Message "Not connected to $($Site.Title) site." -Color "Red" -Silent:$Silent
+                Return $False
+
+            }
 
         } Else {
 
-            Write-Message "Not connected to $($Site.Title) site." -Color "Red" -Silent:$Silent
+            Write-Message "Not connected to a site." -Color "Red" -Silent:$Silent
             Return $False
 
         }
 
-    } Else {
+    } Catch {
 
-        Write-Message "Not connected to a site." -Color "Red" -Silent:$Silent
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
         Return $False
 
     }
@@ -68,7 +86,7 @@ Function Connect-Site {
         Invoke-Operation "Connecting to site: $($Site.Title)" -Return:$Return -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
             $Password = ConvertTo-SecureString -String $Global:CurrentTenant.Domain -AsPlainText -Force
-            $Certificate = Get-ChildItem -Path "$PSScriptRoot" -Recurse | Where-Object Name -Like "$($Global:CurrentTenant.Name).pfx"
+            $Certificate = Get-ChildItem -Path (Get-Path("Certificates")) -Recurse | Where-Object Name -Like "$($Global:CurrentTenant.Name).pfx"
             Connect-PnPOnline -Tenant $Global:CurrentTenant.Domain -Url $Site.Url -ClientId $Global:CurrentTenant.ClientID -CertificatePath $Certificate.FullName -CertificatePassword $Password -ReturnConnection:$Return
             If (-Not $Return) { Set-Variable -Name "CurrentSite" -Value $Site -Scope Global }
 
@@ -93,7 +111,7 @@ Function Disconnect-Site {
     Invoke-Operation -Message "Disconnecting from site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
         $Password = ConvertTo-SecureString -String $Global:CurrentTenant.Domain -AsPlainText -Force
-        $Certificate = Get-ChildItem -Path "$PSScriptRoot" -Recurse | Where-Object Name -Like "$($Global:CurrentTenant.Name).pfx"
+        $Certificate = Get-ChildItem -Path (Get-Path("Certificates")) -Recurse | Where-Object Name -Like "$($Global:CurrentTenant.Name).pfx"
         Connect-PnPOnline -Tenant $Global:CurrentTenant.Domain -Url $Global:CurrentTenant.AdminUrl -ClientId $Global:CurrentTenant.ClientID -CertificatePath $Certificate.FullName -CertificatePassword $Password -ReturnConnection:$Return
         Set-Variable -Name "CurrentSite" -Value (Get-PnPTenantSite $Global:CurrentTenant.AdminUrl) -Scope Global
 
@@ -107,7 +125,8 @@ Function Get-Sites {
         [Switch]$SharePoint,
         [Switch]$OneDrive,
         [Switch]$Teams,
-        [Switch]$Channels
+        [Switch]$Channels,
+        [Switch]$Silent
     )
 
     If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
@@ -123,11 +142,11 @@ Function Get-Sites {
 
     Return $Sites | ForEach-Object {
 
-        If ((Test-SharePointSite $_) -And (Test-HomeSite $_)) { $Type = "Home" }
-        ElseIf ((Test-SharePointSite $_) -And -Not (Test-HomeSite $_)) { $Type = "SharePoint" }
-        ElseIf (Test-OneDriveSite $_) { $Type = "OneDrive" }
-        ElseIf (Test-TeamSite $_) { $Type = "Team" }
-        ElseIf (Test-ChannelSite $_) { $Type = "Channel" }
+        If ((Test-SharePointSite $_ -Silent:$Silent) -And (Test-HomeSite $_ -Silent:$Silent)) { $Type = "Home" }
+        ElseIf ((Test-SharePointSite $_ -Silent:$Silent) -And -Not (Test-HomeSite $_ -Silent:$Silent)) { $Type = "SharePoint" }
+        ElseIf (Test-OneDriveSite $_ -Silent:$Silent) { $Type = "OneDrive" }
+        ElseIf (Test-TeamSite $_ -Silent:$Silent) { $Type = "Team" }
+        ElseIf (Test-ChannelSite $_ -Silent:$Silent) { $Type = "Channel" }
         Else { $Type = "Unknown" }
 
         Add-Member -InputObject $_ -NotePropertyName "Type" -NotePropertyValue $Type -PassThru
@@ -139,13 +158,14 @@ Function Get-Sites {
 Function Get-SubSites {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Recurse
     )
 
     Process {
 
         $Connection = Connect-Site $Site -Return -Silent
-        Return Get-PnPSubWeb -Connection $Connection -Recurse
+        Return Get-PnPSubWeb -Connection $Connection -Recurse:$Recurse
 
     }
 
@@ -177,13 +197,14 @@ Function Get-SubSite {
 
     Param(
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Parameter(Mandatory = $True)][String]$Identity
+        [Parameter(Mandatory = $True)][String]$Identity,
+        [Switch]$Recurse
     )
 
     Process {
 
-        $Connection = Connect-Site $Site -Return -Silent
-        Return Get-PnPSubWeb -Identity $Identity -Connection $Connection -Recurse
+        $SubSites = Get-SubSites $Site -Recurse:$Recurse
+        Return $SubSites | Where-Object { ($_.Title -Eq $Identity) -Or ($_.Url -Eq $Identity) }
 
     }
 
@@ -192,80 +213,160 @@ Function Get-SubSite {
 Function Test-SubSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Null -Ne $Site.ServerRelativeUrl
+    Try {
+
+        Return $Null -Ne $Site.ServerRelativeUrl
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
 Function Test-HomeSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Site.Url.Replace("/", "").EndsWith(".sharepoint.com")
+    Try {
+
+        Return $Site.Url.Replace("/", "").EndsWith(".sharepoint.com")
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
 Function Test-LibrarySite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Site.Url.EndsWith("/Documentos") -Or $Site.Url.EndsWith("/Registros")
+    Try {
+
+        Return $Site.Url.EndsWith("/Documentos") -Or $Site.Url.EndsWith("/Registros")
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
 Function Test-ListsSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Site.Url.EndsWith("/Controles")
+    Try {
+
+        Return $Site.Url.EndsWith("/Controles")
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
 Function Test-SharePointSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Site.Template -Match "SitePage"
+    Try {
+
+        Return $Site.Template -Match "SitePage"
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
 Function Test-OneDriveSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Site.Template -Match "SpsPers" -And $Site.Url -Match "/personal/"
+    Try {
+
+        Return $Site.Template -Match "SpsPers" -And $Site.Url -Match "/personal/"
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
 Function Test-TeamSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Site.Template -Match "Group"
+    Try {
+
+        Return $Site.Template -Match "Group"
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
 Function Test-ChannelSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Switch]$Silent
     )
 
-    Return $Site.Template -Match "TeamChannel"
+    Try {
+
+        Return $Site.Template -Match "TeamChannel"
+
+    } Catch {
+
+        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+        Return $False
+
+    }
 
 }
 
@@ -309,7 +410,7 @@ Function Set-Site {
                 SharingCapability                           = If ($Site.Type -Eq "Home") { "ExternalUserAndGuestSharing" } Else { "ExistingExternalUserSharingOnly" }
             }
             
-            If (-Not (Test-SubSite $Site)) {
+            If (-Not (Test-SubSite $Site -Silent:$Silent)) {
 
                 Set-PnPTenantSite -Identity $Site.Url @SiteParams -Connection $Connection
                 Disable-PnPSharingForNonOwnersOfSite -Identity $Site.Url -Connection $Connection
@@ -355,7 +456,7 @@ Function Set-SiteAdmins {
             If ($Site.Type -Eq "OneDrive") {
 
                 If ($Site.LockState -Eq "ReadOnly") { Start-Sleep -Milliseconds 50; Return }
-                Add-PnPSiteCollectionAdmin -Owners @($GlobalAdmin + $OtherAdmins) -Connection $Connection
+                Add-PnPSiteCollectionAdmin -Owners @($GlobalAdmin + $OtherAdmins) -PrimarySiteCollectionAdmin $Sites.Owner -Connection $Connection
                 
             } Else {
 
@@ -448,7 +549,7 @@ Function Set-SiteHomePage {
             $DefaultLibrary = $Libraries | Where-Object IsDefaultDocumentLibrary -EQ $True
             If ($Libraries -And -Not $DefaultLibrary) { $DefaultLibrary = $Libraries[0] }
         
-            If ((Test-TeamSite $Site) -Or (Test-ChannelSite $Site) -Or (Test-LibrarySite $Site)) {
+            If ((Test-TeamSite $Site -Silent:$Silent) -Or (Test-ChannelSite $Site -Silent:$Silent) -Or (Test-LibrarySite $Site -Silent:$Silent)) {
             
                 $FullUrl = "$($Global:CurrentTenant.BaseUrl)$($DefaultLibrary.DefaultViewUrl)"
                 $RootUrl = $FullUrl.Replace($Site.Url, "")
@@ -504,7 +605,7 @@ Function Set-SiteNavigation {
                 
             }
 
-            If (Test-HomeSite $Site) {
+            If (Test-HomeSite $Site -Silent:$Silent) {
 
                 $Navigation = @(
                     @{ Title = "Início"; Url = "/"; First = $True }
@@ -521,13 +622,13 @@ Function Set-SiteNavigation {
                     @{ Title = "Site Comercial"; Url = "https://www.$($Global:CurrentTenant.Domain)"; External = $True; OpenInNewTab = $True }
                 )
 
-            } ElseIf ((Test-TeamSite $Site) -Or (Test-ChannelSite $Site)) {
+            } ElseIf ((Test-TeamSite $Site -Silent:$Silent) -Or (Test-ChannelSite $Site -Silent:$Silent)) {
                 
                 $Navigation = @(
                     @{ Title = "Arquivos"; Url = "$($Site.Url)/Documentos Compartilhados"; First = $True }
                 )
 
-            } ElseIf (Test-LibrarySite $Site) {
+            } ElseIf (Test-LibrarySite $Site -Silent:$Silent -Silent:$Silent) {
 
                 If ($Site.Url -Like "*/Documentos") {
 
