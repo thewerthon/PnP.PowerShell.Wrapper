@@ -1,7 +1,7 @@
 Function Test-Site {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -30,7 +30,7 @@ Function Test-Site {
 Function Test-SiteConnection {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site = $Global:CurrentSite,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site = $Global:CurrentSite,
         [Switch]$Silent
     )
     
@@ -99,7 +99,7 @@ Function Connect-Site {
 Function Disconnect-Site {
 
     Param (
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site = $Global:CurrentSite,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site = $Global:CurrentSite,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
         [Switch]$Silent
@@ -155,76 +155,31 @@ Function Get-Sites {
     
 }
 
-Function Get-SubSites {
-
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Switch]$Recurse
-    )
-
-    Process {
-
-        $Connection = Connect-Site $Site -Return -Silent
-        Return Get-PnPSubWeb -Connection $Connection -Recurse:$Recurse
-
-    }
-
-}
-
 Function Get-Site {
 
     Param(
-        [String]$Identity
+        [Parameter(ValueFromPipeline = $True)][String]$Identity
     )
 
-    If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
+    Begin {
 
-    If ($Identity) {
-
-        $Site = Get-PnPTenantSite -Identity $Identity
-
-    } Else {
-
-        $Site = $Global:CurrentTenant
+        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
 
     }
-
-    Return $Site
-
-}
-
-Function Get-SubSite {
-
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Parameter(Mandatory = $True)][String]$Identity,
-        [Switch]$Recurse
-    )
 
     Process {
 
-        $SubSites = Get-SubSites $Site -Recurse:$Recurse
-        Return $SubSites | Where-Object { ($_.Title -Eq $Identity) -Or ($_.Url -Eq $Identity) }
+        If ($Identity) {
 
-    }
+            $Site = (Get-Sites | Where-Object { $_.Title -EQ $Identity -Or $_.Url -EQ $Identity })[0]
 
-}
+        } Else {
 
-Function Test-SubSite {
+            $Site = $Global:CurrentTenant
 
-    Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
-        [Switch]$Silent
-    )
+        }
 
-    Try {
-
-        Return $Null -Ne $Site.ServerRelativeUrl
-
-    } Catch {
-
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
+        Return $Site
 
     }
 
@@ -233,7 +188,7 @@ Function Test-SubSite {
 Function Test-HomeSite {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -253,7 +208,7 @@ Function Test-HomeSite {
 Function Test-LibrarySite {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -273,7 +228,7 @@ Function Test-LibrarySite {
 Function Test-ListsSite {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -293,7 +248,7 @@ Function Test-ListsSite {
 Function Test-SharePointSite {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -313,7 +268,7 @@ Function Test-SharePointSite {
 Function Test-OneDriveSite {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -333,7 +288,7 @@ Function Test-OneDriveSite {
 Function Test-TeamSite {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -353,7 +308,7 @@ Function Test-TeamSite {
 Function Test-ChannelSite {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Silent
     )
 
@@ -374,15 +329,14 @@ Function Set-Site {
 
     Param(
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Object]$Connection,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
-        [Switch]$Silent
+        [Switch]$Silent,
+        [Switch]$SubSites
     )
 
     Begin {
 
-        $ParamConnection = $Connection
         If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
         
     }
@@ -392,7 +346,7 @@ Function Set-Site {
         Invoke-Operation -Message "Setting parameters to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
             If ($Site.Type -Eq "OneDrive") { Start-Sleep -Milliseconds 50; Return }
-            If (-Not $ParamConnection) { $Connection = Connect-Site $Site -Return -Silent } Else { $Connection = $ParamConnection }
+            $Connection = Connect-Site $Site -Return -Silent
 
             $SiteParams = @{
                 DefaultLinkPermission                       = "View"
@@ -410,7 +364,7 @@ Function Set-Site {
                 SharingCapability                           = If ($Site.Type -Eq "Home") { "ExternalUserAndGuestSharing" } Else { "ExistingExternalUserSharingOnly" }
             }
             
-            If (-Not (Test-SubSite $Site -Silent:$Silent)) {
+            If (-Not $SubSites) {
 
                 Set-PnPTenantSite -Identity $Site.Url @SiteParams -Connection $Connection
                 Disable-PnPSharingForNonOwnersOfSite -Identity $Site.Url -Connection $Connection
@@ -431,7 +385,6 @@ Function Set-SiteAdmins {
 
     Param(
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Object]$Connection,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
         [Switch]$Silent
@@ -439,7 +392,6 @@ Function Set-SiteAdmins {
 
     Begin {
 
-        $ParamConnection = $Connection
         If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
 
         $GlobalAdmin = "Administradores Globais"
@@ -451,7 +403,7 @@ Function Set-SiteAdmins {
 
         Invoke-Operation -Message "Setting administrators to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
-            If (-Not $ParamConnection) { $Connection = Connect-Site $Site -Return -Silent } Else { $Connection = $ParamConnection }
+            $Connection = Connect-Site $Site -Return -Silent
 
             If ($Site.Type -Eq "OneDrive") {
 
@@ -476,7 +428,6 @@ Function Set-SiteAppearance {
 
     Param(
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Object]$Connection,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
         [Switch]$Silent
@@ -484,7 +435,6 @@ Function Set-SiteAppearance {
 
     Begin {
 
-        $ParamConnection = $Connection
         If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
 
         $TenantTheme = ConvertFrom-Json $Global:CurrentTenant.Theme -AsHashtable
@@ -495,7 +445,7 @@ Function Set-SiteAppearance {
 
         Invoke-Operation -Message "Setting appearance to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
-            If (-Not $ParamConnection) { $Connection = Connect-Site $Site -Return -Silent } Else { $Connection = $ParamConnection }
+            $Connection = Connect-Site $Site -Return -Silent
 
             If (-Not (Get-PnPTenantTheme $TenantTheme.name)) {
 
@@ -510,9 +460,7 @@ Function Set-SiteAppearance {
             Set-PnPFooter -Enabled:$False -Layout "Simple" -BackgroundTheme "Neutral" -Title $Null -LogoUrl $Null -Connection $Connection
             
         }
-
-        Get-SubSites $Site | Set-SiteAppearance -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
-            
+ 
     }
 
 }
@@ -521,7 +469,6 @@ Function Set-SiteHomePage {
 
     Param(
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Object]$Connection,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
         [Switch]$Silent
@@ -529,7 +476,6 @@ Function Set-SiteHomePage {
 
     Begin {
 
-        $ParamConnection = $Connection
         If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
 
     }
@@ -539,7 +485,7 @@ Function Set-SiteHomePage {
         Invoke-Operation -Message "Setting homepage to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
             If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
-            If (-Not $ParamConnection) { $Connection = Connect-Site $Site -Return -Silent } Else { $Connection = $ParamConnection }
+            $Connection = Connect-Site $Site -Return -Silent
         
             $Pages = Get-PnPPage -Connection:$Connection
             $DefaultPage = $Pages | Where-Object Name -EQ "Home.aspx"
@@ -564,8 +510,6 @@ Function Set-SiteHomePage {
 
         }
 
-        Get-SubSites $Site | Set-SiteHomePage -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
-        
     }
 
 }
@@ -574,7 +518,6 @@ Function Set-SiteNavigation {
 
     Param(
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Object]$Connection,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
         [Switch]$Silent,
@@ -584,7 +527,6 @@ Function Set-SiteNavigation {
 
     Begin {
 
-        $ParamConnection = $Connection
         If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
 
         $EventsList = $Global:CurrentTenant.EventsID
@@ -596,7 +538,7 @@ Function Set-SiteNavigation {
         Invoke-Operation -Message "Setting navigation to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
             If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
-            If (-Not $ParamConnection) { $Connection = Connect-Site $Site -Return -Silent } Else { $Connection = $ParamConnection }
+            $Connection = Connect-Site $Site -Return -Silent
             
             If ($Reset) {
                 
@@ -692,8 +634,6 @@ Function Set-SiteNavigation {
             }
 
         }
-
-        Get-SubSites $Site | Set-SiteNavigation -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Reset:$Reset -Force:$Force
 
     }
 

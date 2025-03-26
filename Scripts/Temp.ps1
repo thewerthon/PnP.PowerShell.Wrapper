@@ -82,19 +82,19 @@ Function Set-View {
 
 }
 
-# Configure Lists
-ForEach ($Item In $Lists) {
+Get-PnPField -List $List.Id | Where-Object { $_.InternalName -In $ColumnsMapping.Keys } | ForEach-Object {
 
-    # Configure Views
-    $Item.Views | Where-Object { $_.Hidden -Eq $False } | ForEach-Object {
+    If ($ColumnsMapping.ContainsKey($_.InternalName)) {
 
-        If ($Item.BaseType -Eq 'DocumentLibrary') {
-
-
-
-        }
+        $_.Title = $ColumnsMapping[$_.InternalName].Title
+        $_.CustomFormatter = $ColumnsMapping[$_.InternalName].CustomFormatter
 
     }
+
+}
+
+# Configure Lists
+ForEach ($Item In $Lists) {
 
     # Configure Views
     ForEach ($View in $Views) {

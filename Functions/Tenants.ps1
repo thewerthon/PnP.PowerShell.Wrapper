@@ -1,7 +1,7 @@
 Function Test-Tenant {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Tenant,
+        [Parameter(ValueFromPipeline = $True)][Object]$Tenant,
         [Switch]$Silent
     )
 
@@ -30,7 +30,7 @@ Function Test-Tenant {
 Function Test-TenantConnection {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Tenant = $Global:CurrentTenant,
+        [Parameter(ValueFromPipeline = $True)][Object]$Tenant = $Global:CurrentTenant,
         [Switch]$Silent
     )
     
@@ -97,7 +97,7 @@ Function Connect-Tenant {
 Function Disconnect-Tenant {
 
     Param (
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$Tenant = $Global:CurrentTenant,
+        [Parameter(ValueFromPipeline = $True)][Object]$Tenant = $Global:CurrentTenant,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
         [Switch]$Silent
@@ -167,28 +167,32 @@ Function Get-Tenants {
 Function Get-Tenant {
 
     Param(
-        [String]$Identity,
+        [Parameter(ValueFromPipeline = $True)][String]$Identity,
         [Switch]$Params
     )
 
-    If ($Identity) {
+    Process {
 
-        $Tenant = (Get-Tenants | Where-Object { $_.Slug -Eq $Identity -Or $_.Name -Eq $Identity })[0]
+        If ($Identity) {
 
-    } Else {
+            $Tenant = (Get-Tenants | Where-Object { $_.Slug -Eq $Identity -Or $_.Name -Eq $Identity })[0]
 
-        $Tenant = $Global:CurrentTenant
+        } Else {
+
+            $Tenant = $Global:CurrentTenant
+
+        }
+
+        If ($Tenant -And $Params) {
+
+            $Connection = Connect-Tenant $Tenant -Return -Silent
+            $Tenant.Params = Get-PnPTenant -Connection $Connection
+
+        }
+
+        Return $Tenant
 
     }
-
-    If ($Tenant -And $Params) {
-
-        $Connection = Connect-Tenant $Tenant -Return -Silent
-        $Tenant.Params = Get-PnPTenant -Connection $Connection
-
-    }
-
-    Return $Tenant
 
 }
 

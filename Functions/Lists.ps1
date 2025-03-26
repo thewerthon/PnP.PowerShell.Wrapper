@@ -1,13 +1,13 @@
 Function Test-List {
 
     Param(
-        [Parameter(Mandatory = $False, ValueFromPipeline = $True)][Object]$List,
+        [Parameter(ValueFromPipeline = $True)][Object]$List,
         [Switch]$Silent
     )
 
     Try {
 
-        If (-Not ((Test-SingleObject $List -Silent:$Silent) -And (Test-Properties $List Title, DefaultViewUrl -Silent:$Silent) -And ($List.BaseType -Eq "GenericList"))) {
+        If (-Not ((Test-SingleObject $List -Silent:$Silent) -And (Test-Properties $List Id, Title, DefaultViewUrl -Silent:$Silent) -And ($List.BaseType -Eq "GenericList"))) {
 
             Write-Message "Invalid list." -Color "Red" -Silent:$Silent
             Return $False
@@ -42,8 +42,143 @@ Function Get-Lists {
     Process {
 
         $Connection = Connect-Site $Site -Return -Silent
-        Return Get-PnPList -Connection $Connection | Where-Object { $_.Hidden -Eq $False -And $_.IsCatalog -Eq $False -And $_.BaseType -Eq "GenericList" }
+        $Lists = Get-PnPList -Connection $Connection | Where-Object { $_.Hidden -Eq $False -And $_.IsCatalog -Eq $False -And $_.BaseType -Eq "GenericList" }
+
+        Return $Lists | ForEach-Object {
+
+            Add-Member -InputObject $_ -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
+
+        }
 
     }
 
+}
+
+Function Get-List {
+
+    Param(
+        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(Mandatory = $True)][String]$Identity
+    )
+
+    Begin {
+
+        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
+
+    }
+
+    Process {
+        
+        $Connection = Connect-Site $Site -Return -Silent
+        Return Get-PnPList -Identity $Identity -Connection $Connection | Where-Object { $_.Hidden -Eq $False -And $_.IsCatalog -Eq $False -And $_.BaseType -Eq "GenericList" }
+
+    }
+
+}
+
+Function Set-Library {
+
+    Param(
+        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Library,
+        [Switch]$DisplayInfos,
+        [Switch]$SuppressErrors,
+        [Switch]$Silent
+    )
+
+    Begin {
+
+        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
+        
+    }
+
+    Process {
+
+        Invoke-Operation -Message "Setting parameters to library: $($Library.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
+            
+            $Connection = Connect-Site $Library.ParentSite -Return -Silent
+            
+            If ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Documentos/Atuais")) {
+                
+                $LibraryParams = @{
+                    DraftVersionVisibility          = "Author"
+                    EnableAutoExpirationVersionTrim = $True
+                    EnableMinorVersions             = $True
+                    EnableModeration                = $True
+                    EnableVersioning                = $True
+                    ForceCheckout                   = $True
+                    ListExperience                  = "Auto"
+                    OpenDocumentsMode               = "ClientApplication"
+                }
+
+            } ElseIf ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Registros/Atuais")) {
+                
+                $LibraryParams = @{
+                    DraftVersionVisibility          = "Author"
+                    EnableAutoExpirationVersionTrim = $True
+                    EnableMinorVersions             = $False
+                    EnableModeration                = $False
+                    EnableVersioning                = $True
+                    ForceCheckout                   = $False
+                    ListExperience                  = "Auto"
+                    OpenDocumentsMode               = "ClientApplication"
+                }
+
+            } Else {
+                
+                $LibraryParams = @{
+                    DraftVersionVisibility          = "Reader"
+                    EnableAutoExpirationVersionTrim = $True
+                    EnableMinorVersions             = $False
+                    EnableModeration                = $False
+                    EnableVersioning                = $True
+                    ForceCheckout                   = $False
+                    ListExperience                  = "Auto"
+                    OpenDocumentsMode               = "ClientApplication"
+                }
+
+            }
+            
+            Set-PnPList $Library.Id @LibraryParams -Connection $Connection | Out-Null
+
+        }
+        
+    }
+    
+}
+
+Function Set-List {
+
+    Param(
+        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$List,
+        [Switch]$DisplayInfos,
+        [Switch]$SuppressErrors,
+        [Switch]$Silent
+    )
+
+    Begin {
+
+        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
+        
+    }
+
+    Process {
+
+        Invoke-Operation -Message "Setting parameters to list: $($List.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
+            
+            $Connection = Connect-Site $List.ParentSite -Return -Silent
+            
+            $ListParams = @{
+                EnableAutoExpirationVersionTrim = $True
+                EnableMinorVersions             = $False
+                EnableModeration                = $False
+                EnableVersioning                = $True
+                ListExperience                  = "Auto"
+            }
+
+            Set-PnPList $List.Id @ListParams -Connection $Connection | Out-Null
+
+        }
+        
+    }
+    
 }
