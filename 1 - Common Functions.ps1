@@ -172,8 +172,8 @@ Function Invoke-Operation {
         [Parameter(Mandatory = $True)][String]$Message,
         [Parameter(Mandatory = $True)][ScriptBlock]$Operation,
         [Switch]$Return,
-        [Switch]$ShowInfo,
-        [Switch]$ShowErrors,
+        [Switch]$DisplayInfos,
+        [Switch]$SuppressErrors,
         [Switch]$Silent
     )
 
@@ -185,7 +185,7 @@ Function Invoke-Operation {
 
         Write-Message "success!" -Color "Green" -Silent:$Silent
 
-        Write-Message $Output -Color "Gray" -Condition:$ShowInfo
+        Write-Message $Output -Color "Gray" -Condition:$DisplayInfos -Silent:$Silent
 
         If ($Return) { Return $Output }
 
@@ -195,14 +195,28 @@ Function Invoke-Operation {
 
         Write-Message "failed!" -Color "Magenta" -Silent:$Silent
         
-        Write-Message $Output -Color "Gray" -Condition:$ShowInfo
+        Write-Message $Output -Color "Gray" -Condition:$DisplayInfos -Silent:$Silent
 
-        Write-Message $_.Exception.Message -Color "Red" -Condition:$ShowErrors
+        Write-Message $_.Exception.Message -Color "Red" -Condition:(!$SuppressErrors) -Silent:$Silent
 
         If ($Return) { Return $Null }
 
         $Output
 
     }
+
+}
+
+Function Invoke-UpdateModule {
+
+    Param(
+        [String]$ModuleName = "PnP.PowerShell",
+        [Switch]$AllowPrerelease,
+        [Switch]$Reinstall
+    )
+    
+    If ($Reinstall) { Uninstall-Module $ModuleName -Force -ErrorAction Ignore }
+    If (-Not (Get-InstalledModule $ModuleName -ErrorAction Ignore)) { If ($AllowPrerelease) { Install-Module $ModuleName -AllowPrerelease -SkipPublisherCheck -Force } Else { Install-Module $ModuleName -Force } }
+    If ($AllowPrerelease) { Update-Module $ModuleName -AllowPrerelease -Force } Else { Update-Module $ModuleName -Force }
 
 }
