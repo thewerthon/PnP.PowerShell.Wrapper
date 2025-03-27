@@ -149,7 +149,9 @@ Function Get-Sites {
         ElseIf (Test-ChannelSite $_ -Silent:$Silent) { $Type = "Channel" }
         Else { $Type = "Unknown" }
 
-        Add-Member -InputObject $_ -NotePropertyName "Type" -NotePropertyValue $Type -PassThru
+        $_
+        | Add-Member -NotePropertyName "Type" -NotePropertyValue $Type -PassThru
+        
 
     }
     
@@ -161,17 +163,11 @@ Function Get-Site {
         [Parameter(ValueFromPipeline = $True)][String]$Identity
     )
 
-    Begin {
-
-        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
-
-    }
-
     Process {
 
         If ($Identity) {
 
-            $Site = (Get-Sites | Where-Object { $_.Title -EQ $Identity -Or $_.Url -EQ $Identity })[0]
+            $Site = Get-Sites | Where-Object { $_.SiteId -EQ $Identity -Or $_.Url -EQ $Identity -Or $_.Title -EQ $Identity }
 
         } Else {
 
@@ -179,7 +175,7 @@ Function Get-Site {
 
         }
 
-        Return $Site
+        If ($Site) { Return $Site[0] }
 
     }
 
@@ -361,9 +357,15 @@ Function Set-Site {
                 OverrideSharingCapability                   = $False
                 OverrideTenantAnonymousLinkExpirationPolicy = $False
                 OverrideTenantExternalUserExpirationPolicy  = $False
-                SharingCapability                           = If ($Site.Type -Eq "Home") { "ExternalUserAndGuestSharing" } Else { "ExistingExternalUserSharingOnly" }
+                SharingCapability                           = "ExistingExternalUserSharingOnly"
             }
             
+            If ($Site.Type -Eq "Home") { 
+                
+                $SiteParams.SharingCapability = "ExternalUserAndGuestSharing"
+            
+            }
+
             If (-Not $SubSites) {
 
                 Set-PnPTenantSite -Identity $Site.Url @SiteParams -Connection $Connection
@@ -374,8 +376,6 @@ Function Set-Site {
             Set-PnPWeb -MembersCanShare:$False -DisablePowerAutomate:$False -CommentsOnSitePagesDisabled:$False -Connection $Connection
             
         }
-
-        Get-SubSites $Site | Set-Site -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
 
     }
 
@@ -564,13 +564,21 @@ Function Set-SiteNavigation {
                     @{ Title = "Site Comercial"; Url = "https://www.$($Global:CurrentTenant.Domain)"; External = $True; OpenInNewTab = $True }
                 )
 
-            } ElseIf ((Test-TeamSite $Site -Silent:$Silent) -Or (Test-ChannelSite $Site -Silent:$Silent)) {
+            }
+            
+            If ((Test-TeamSite $Site -Silent:$Silent) -Or (Test-ChannelSite $Site -Silent:$Silent)) {
                 
                 $Navigation = @(
                     @{ Title = "Arquivos"; Url = "$($Site.Url)/Documentos Compartilhados"; First = $True }
                 )
 
-            } ElseIf (Test-LibrarySite $Site -Silent:$Silent -Silent:$Silent) {
+            }
+            
+            If (Test-LibrarySite $Site -Silent:$Silent -Silent:$Silent) {
+
+                $Navigation = @(
+                    @{ Title = "Arquivos"; Url = "$($Site.Url)/Documentos Compartilhados"; First = $True }
+                )
 
                 If ($Site.Url -Like "*/Documentos") {
 
@@ -579,24 +587,16 @@ Function Set-SiteNavigation {
                         @{ Title = "Documentos Obsoletos"; Url = "$($Site.Url)/Obsoletos" }
                     )
 
-                } ElseIf ($Site.Url -Like "*/Registros") {
+                }
+                
+                If ($Site.Url -Like "*/Registros") {
 
                     $Navigation = @(
                         @{ Title = "Registros Atuais"; Url = "$($Site.Url)/Atuais"; First = $True }
                         @{ Title = "Registros Obsoletos"; Url = "$($Site.Url)/Obsoletos" }
                     )
 
-                } Else {
-
-                    $Navigation = @(
-                        @{ Title = "Arquivos"; Url = "$($Site.Url)/Documentos Compartilhados"; First = $True }
-                    )
-
                 }
-
-            } Else {
-
-                $Navigation = $Null
 
             }
 

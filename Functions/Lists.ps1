@@ -46,7 +46,9 @@ Function Get-Lists {
 
         Return $Lists | ForEach-Object {
 
-            Add-Member -InputObject $_ -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
+            $_
+            | Add-Member -NotePropertyName "Type" -NotePropertyValue "List" -PassThru
+            | Add-Member -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
 
         }
 
@@ -57,93 +59,17 @@ Function Get-Lists {
 Function Get-List {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Parameter(Mandatory = $True)][String]$Identity
+        [Parameter(Mandatory = $True)][String]$Identity,
+        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
     )
-
-    Begin {
-
-        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
-
-    }
 
     Process {
         
-        $Connection = Connect-Site $Site -Return -Silent
-        Return Get-PnPList -Identity $Identity -Connection $Connection | Where-Object { $_.Hidden -Eq $False -And $_.IsCatalog -Eq $False -And $_.BaseType -Eq "GenericList" }
+        $List = Get-Lists $Site | Where-Object { $_.Id -Eq $Identity -Or $_.RootFolder.ServerRelativeUrl -Eq $Identity -Or $_.Title -Eq $Identity }
+        If ($List) { Return $List[0] }
 
     }
 
-}
-
-Function Set-Library {
-
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Library,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
-
-    Begin {
-
-        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
-        
-    }
-
-    Process {
-
-        Invoke-Operation -Message "Setting parameters to library: $($Library.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
-            
-            $Connection = Connect-Site $Library.ParentSite -Return -Silent
-            
-            If ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Documentos/Atuais")) {
-                
-                $LibraryParams = @{
-                    DraftVersionVisibility          = "Author"
-                    EnableAutoExpirationVersionTrim = $True
-                    EnableMinorVersions             = $True
-                    EnableModeration                = $True
-                    EnableVersioning                = $True
-                    ForceCheckout                   = $True
-                    ListExperience                  = "Auto"
-                    OpenDocumentsMode               = "ClientApplication"
-                }
-
-            } ElseIf ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Registros/Atuais")) {
-                
-                $LibraryParams = @{
-                    DraftVersionVisibility          = "Author"
-                    EnableAutoExpirationVersionTrim = $True
-                    EnableMinorVersions             = $False
-                    EnableModeration                = $False
-                    EnableVersioning                = $True
-                    ForceCheckout                   = $False
-                    ListExperience                  = "Auto"
-                    OpenDocumentsMode               = "ClientApplication"
-                }
-
-            } Else {
-                
-                $LibraryParams = @{
-                    DraftVersionVisibility          = "Reader"
-                    EnableAutoExpirationVersionTrim = $True
-                    EnableMinorVersions             = $False
-                    EnableModeration                = $False
-                    EnableVersioning                = $True
-                    ForceCheckout                   = $False
-                    ListExperience                  = "Auto"
-                    OpenDocumentsMode               = "ClientApplication"
-                }
-
-            }
-            
-            Set-PnPList $Library.Id @LibraryParams -Connection $Connection | Out-Null
-
-        }
-        
-    }
-    
 }
 
 Function Set-List {
@@ -175,7 +101,7 @@ Function Set-List {
                 ListExperience                  = "Auto"
             }
 
-            Set-PnPList $List.Id @ListParams -Connection $Connection | Out-Null
+            Set-PnPList -Identity $List.Id @ListParams -Connection $Connection | Out-Null
 
         }
         

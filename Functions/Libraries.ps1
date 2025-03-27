@@ -46,7 +46,9 @@ Function Get-Libraries {
 
         Return $Libraries | ForEach-Object {
 
-            Add-Member -InputObject $_ -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
+            $_
+            | Add-Member -NotePropertyName "Type" -NotePropertyValue "Library" -PassThru
+            | Add-Member -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
 
         }
 
@@ -57,20 +59,14 @@ Function Get-Libraries {
 Function Get-Library {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Parameter(Mandatory = $True)][String]$Identity
+        [Parameter(Mandatory = $True)][String]$Identity,
+        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
     )
-
-    Begin {
-
-        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
-
-    }
 
     Process {
         
-        $Connection = Connect-Site $Site -Return -Silent
-        Return Get-PnPList -Identity $Identity -Connection $Connection | Where-Object { $_.Hidden -Eq $False -And $_.IsCatalog -Eq $False -And $_.BaseType -Eq "DocumentLibrary" }
+        $Library = Get-Libraries $Site | Where-Object { $_.Id -Eq $Identity -Or $_.RootFolder.ServerRelativeUrl -Eq $Identity -Or $_.Title -Eq $Identity }
+        If ($Library) { Return $Library[0] }
 
     }
 
@@ -96,7 +92,18 @@ Function Set-Library {
         Invoke-Operation -Message "Setting parameters to library: $($Library.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
             $Connection = Connect-Site $Library.ParentSite -Return -Silent
-            
+
+            $LibraryParams = @{
+                DraftVersionVisibility          = "Reader"
+                EnableAutoExpirationVersionTrim = $True
+                EnableMinorVersions             = $False
+                EnableModeration                = $False
+                EnableVersioning                = $True
+                ForceCheckout                   = $False
+                ListExperience                  = "Auto"
+                OpenDocumentsMode               = "ClientApplication"
+            }
+
             If ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Documentos/Atuais")) {
                 
                 $LibraryParams = @{
@@ -110,7 +117,9 @@ Function Set-Library {
                     OpenDocumentsMode               = "ClientApplication"
                 }
 
-            } ElseIf ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Registros/Atuais")) {
+            }
+            
+            If ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Registros/Atuais")) {
                 
                 $LibraryParams = @{
                     DraftVersionVisibility          = "Author"
@@ -123,22 +132,9 @@ Function Set-Library {
                     OpenDocumentsMode               = "ClientApplication"
                 }
 
-            } Else {
-                
-                $LibraryParams = @{
-                    DraftVersionVisibility          = "Reader"
-                    EnableAutoExpirationVersionTrim = $True
-                    EnableMinorVersions             = $False
-                    EnableModeration                = $False
-                    EnableVersioning                = $True
-                    ForceCheckout                   = $False
-                    ListExperience                  = "Auto"
-                    OpenDocumentsMode               = "ClientApplication"
-                }
-
             }
-            
-            Set-PnPList $Library.Id @LibraryParams -Connection $Connection | Out-Null
+
+            Set-PnPList -Identity $Library.Id @LibraryParams -Connection $Connection | Out-Null
 
         }
         

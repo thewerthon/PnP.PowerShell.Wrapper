@@ -1,13 +1,22 @@
 Function Test-SubSite {
 
     Param(
-        [Parameter(ValueFromPipeline = $True)][Object]$Site,
+        [Parameter(ValueFromPipeline = $True)][Object]$SubSite,
         [Switch]$Silent
     )
 
     Try {
 
-        Return $Null -Ne $Site.ServerRelativeUrl
+        If (-Not ((Test-SingleObject $SubSite -Silent:$Silent) -And (Test-Properties $SubSite Url, Title -Silent:$Silent))) {
+
+            Write-Message "Invalid subsite." -Color "Red" -Silent:$Silent
+            Return $False
+
+        } Else {
+
+            Return $True
+
+        }
 
     } Catch {
 
@@ -45,15 +54,15 @@ Function Get-SubSites {
 Function Get-SubSite {
 
     Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
         [Parameter(Mandatory = $True)][String]$Identity,
+        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
         [Switch]$Recurse
     )
 
     Process {
 
-        $SubSite = (Get-SubSites $Site -Recurse:$Recurse | Where-Object { ($_.Title -Eq $Identity) -Or ($_.Url -Eq $Identity) })[0]
-        Return $SubSite
+        $SubSite = Get-SubSites $Site -Recurse:$Recurse | Where-Object { $_.Id -Eq $Identity -Or $_.Url -Eq $Identity -Or $_.Title -Eq $Identity }
+        If ($SubSite) { Return $SubSite[0] }
 
     }
 

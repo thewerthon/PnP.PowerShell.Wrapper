@@ -28,3 +28,11 @@ If (-Not $Library) { $Library = $Libraries[0] }
 # Testing Lists
 If (-Not $Lists) { $Lists = Get-Lists $Site }
 If (-Not $List) { $List = $Lists[0] }
+
+# Testing Fields
+If (-Not $Fields) { $Fields = Get-Fields $Library }
+If (-Not $Field) { $Field = $Fields[0] }
+
+# Testing Views
+If (-Not $Views) { $Views = Get-Views $Library }
+If (-Not $View) { $View = $Views[0] }
