@@ -124,6 +124,7 @@ Function Get-Sites {
     Param(
         [Switch]$SharePoint,
         [Switch]$OneDrive,
+        [Switch]$Groups,
         [Switch]$Teams,
         [Switch]$Channels,
         [Switch]$Silent
@@ -134,26 +135,51 @@ Function Get-Sites {
     $Sites = @()
     $AllSites = Get-PnPTenantSite -IncludeOneDriveSites
 
-    If (-Not $SharePoint -And -Not $OneDrive -And -Not $Teams -And -Not $Channels) { $Sites = $AllSites }
-    If ($SharePoint) { $Sites = $Sites + ($AllSites | Where-Object Template -Match "SitePage" | Where-Object Url -NotMatch "/marca") }
-    If ($OneDrive) { $Sites = $Sites + ($AllSites | Where-Object Template -Match "SpsPers" | Where-Object Url -Match "/personal/") }
-    If ($Teams) { $Sites = $Sites + ($AllSites | Where-Object Template -Match "Group") }
-    If ($Channels) { $Sites = $Sites + ($AllSites | Where-Object Template -Match "TeamChannel") }
+    If (-Not ($SharePoint -Or $OneDrive -Or $Groups -Or $Teams -Or $Channels)) { $Sites = $AllSites }
 
-    Return $Sites | ForEach-Object {
-
-        If ((Test-SharePointSite $_ -Silent:$Silent) -And (Test-HomeSite $_ -Silent:$Silent)) { $Type = "Home" }
-        ElseIf ((Test-SharePointSite $_ -Silent:$Silent) -And -Not (Test-HomeSite $_ -Silent:$Silent)) { $Type = "SharePoint" }
-        ElseIf (Test-OneDriveSite $_ -Silent:$Silent) { $Type = "OneDrive" }
-        ElseIf (Test-TeamSite $_ -Silent:$Silent) { $Type = "Team" }
-        ElseIf (Test-ChannelSite $_ -Silent:$Silent) { $Type = "Channel" }
-        Else { $Type = "Unknown" }
-
-        $_
-        | Add-Member -NotePropertyName "Type" -NotePropertyValue $Type -PassThru
+    If ($SharePoint) {
         
-
+        $TempSites = $AllSites | Where-Object Template -Match "SitePage" | Where-Object Url -NotMatch "/marca"
+        $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue ($(If (Test-HomeSite $_) { "Home" } Else { "SharePoint" })) -PassThru }
+        $Sites += $TempSites
+    
     }
+
+    If ($OneDrive) {
+        
+        $TempSites = $AllSites | Where-Object Template -Match "SpsPers" | Where-Object Url -Match "/personal/"
+        $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue "OneDrive" -PassThru }
+        $Sites += $TempSites
+    
+    }
+    
+    If ($Groups -Or $Teams) {
+        
+        If ($Groups) {
+
+            $TempSites = $AllSites | Where-Object Template -Match "Group"
+            $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue "Group" -PassThru }
+            $Sites += $TempSites
+            
+        } ElseIf ($Teams) {
+
+            $TempSites = $AllSites | Where-Object Template -Match "Group" | Where-Object Url -NotLike "*/*.membros" | Where-Object Url -NotLike "*/*engage*" | Where-Object Url -NotLike "*/*yammer*" | Where-Object Url -NotLike "*/*admin*" | Where-Object Url -NotLike "*//*/$($Global:CurrentTenant.Slug)*"
+            $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue "Team" -PassThru }
+            $Sites += $TempSites
+            
+        }
+    
+    }
+
+    If ($Channels) {
+        
+        $TempSites = $AllSites | Where-Object Template -Match "TeamChannel"
+        $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue "Channel" -PassThru }
+        $Sites += $TempSites
+    
+    }
+
+    Return $Sites
     
 }
 
@@ -387,7 +413,8 @@ Function Set-SiteAdmins {
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
-        [Switch]$Silent
+        [Switch]$Silent,
+        [Switch]$Clear
     )
 
     Begin {
@@ -408,13 +435,13 @@ Function Set-SiteAdmins {
             If ($Site.Type -Eq "OneDrive") {
 
                 If ($Site.LockState -Eq "ReadOnly") { Start-Sleep -Milliseconds 50; Return }
-                Add-PnPSiteCollectionAdmin -Owners @($GlobalAdmin + $OtherAdmins) -PrimarySiteCollectionAdmin $Sites.Owner -Connection $Connection
-                
+                Add-PnPSiteCollectionAdmin -Owners @($GlobalAdmin + $OtherAdmins) -PrimarySiteCollectionAdmin $Site.Owner -Connection $Connection
+                If ($Clear) { Get-PnPSiteCollectionAdmin -Connection $Connection | Where-Object Title -NE $GlobalAdmin | Where-Object Email -NotIn ($OtherAdmins + $Site.Owner) | Remove-PnPSiteCollectionAdmin -Connection $Connection }
+
             } Else {
 
-                $SiteAdmins = Get-PnPSiteCollectionAdmin -Connection $Connection
                 Add-PnPSiteCollectionAdmin -Owners $OtherAdmins -PrimarySiteCollectionAdmin $GlobalAdmin -Connection $Connection
-                $SiteAdmins | Where-Object Title -NE $GlobalAdmin | Where-Object LoginName -NotIn ($OtherAdmins) | Remove-PnPSiteCollectionAdmin -Connection $Connection
+                If ($Clear) { Get-PnPSiteCollectionAdmin -Connection $Connection | Where-Object Title -NE $GlobalAdmin | Where-Object Email -NotIn ($OtherAdmins) | Remove-PnPSiteCollectionAdmin -Connection $Connection }
 
             }
             
@@ -445,15 +472,16 @@ Function Set-SiteAppearance {
 
         Invoke-Operation -Message "Setting appearance to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
+            If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
             $Connection = Connect-Site $Site -Return -Silent
 
-            If (-Not (Get-PnPTenantTheme $TenantTheme.name)) {
-
+            If (-Not (Get-PnPTenantTheme $TenantTheme.name -ErrorAction Ignore)) {
+                
                 Remove-PnPTenantTheme -Identity $TenantTheme.name -Connection $Connection
                 Add-PnPTenantTheme -Identity $TenantTheme.name -Palette $TenantTheme.palette -IsInverted $TenantTheme.isInverted -Overwrite -Connection $Connection
 
             }
-
+            
             Set-PnPWebTheme -Theme $TenantTheme.name -Connection $Connection
             Set-PnPWeb -HeaderLayout "Standard" -HeaderEmphasis "None" -HideTitleInHeader:$False -QuickLaunchEnabled:$True -HorizontalQuickLaunch:$True -MegaMenuEnabled:$False -Connection $Connection
             Set-PnPWebHeader -HeaderLayout "Standard" -HeaderEmphasis "None" -HideTitleInHeader:$False -HeaderBackgroundImageUrl $Null -LogoAlignment Left -Connection $Connection
@@ -520,15 +548,14 @@ Function Set-SiteNavigation {
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
-        [Switch]$Silent,
-        [Switch]$Reset,
-        [Switch]$Force
+        [Switch]$Silent
     )
 
     Begin {
 
         If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
 
+        $AdminGroup = Get-PnPEntraIDGroup -Identity "Administradores Globais"
         $EventsList = $Global:CurrentTenant.EventsID
         
     }
@@ -539,12 +566,15 @@ Function Set-SiteNavigation {
 
             If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
             $Connection = Connect-Site $Site -Return -Silent
+        
+            $Navigation = $Null
+            $TeamsNavigation = $Null
+            $Locations = @("TopNavigationBar", "QuickLaunch", "SearchNav", "Footer")
+
+            ForEach ($Location in $Locations) {
+                
+                Get-PnPNavigationNode -Location $Location -Connection:$Connection | Remove-PnPNavigationNode -Force -Connection:$Connection
             
-            If ($Reset) {
-                
-                $Locations = @("TopNavigationBar", "QuickLaunch", "SearchNav", "Footer")
-                ForEach ($Location in $Locations) { Get-PnPNavigationNode -Location $Location -Connection:$Connection | Remove-PnPNavigationNode -Force -Connection:$Connection }
-                
             }
 
             If (Test-HomeSite $Site -Silent:$Silent) {
@@ -556,13 +586,23 @@ Function Set-SiteNavigation {
                     @{ Title = "Documentos"; Url = "/Documentos" }
                     @{ Title = "Registros"; Url = "/Registros" }
                     @{ Title = "Controles"; Url = "/Controles" }
+                    @{ Title = "Identidade"; Url = "/Identidade" }
                     @{ Title = "Arquivos Públicos"; Url = "/Publico" }
                     @{ Title = "Arquivos Pessoais"; Url = $Global:CurrentTenant.BaseUrl.Replace(".sharepoint.com", "-my.sharepoint.com/my"); External = $True }
                     @{ Title = "Arquivos de Equipes"; Url = "http://linkless.header/" }
-                    @{ Title = "Aplicativos"; Url = "http://linkless.header/" }
-                    @{ Title = "Configurações"; Url = "http://linkless.header/" }
                     @{ Title = "Site Comercial"; Url = "https://www.$($Global:CurrentTenant.Domain)"; External = $True; OpenInNewTab = $True }
                 )
+
+                $TeamsNavigation = Get-Sites -Teams | Sort-Object Title | ForEach-Object {
+
+                    @{
+                        Title       = $_.Title
+                        Url         = $_.Url
+                        External    = $True
+                        AudienceIds = @($AdminGroup.Id, $_.RelatedGroupId)
+                    }
+
+                }
 
             }
             
@@ -574,7 +614,7 @@ Function Set-SiteNavigation {
 
             }
             
-            If (Test-LibrarySite $Site -Silent:$Silent -Silent:$Silent) {
+            If (Test-LibrarySite $Site -Silent:$Silent) {
 
                 $Navigation = @(
                     @{ Title = "Arquivos"; Url = "$($Site.Url)/Documentos Compartilhados"; First = $True }
@@ -583,8 +623,8 @@ Function Set-SiteNavigation {
                 If ($Site.Url -Like "*/Documentos") {
 
                     $Navigation = @(
-                        @{ Title = "Documentos Atuais"; Url = "$($Site.Url)/Atuais"; First = $True }
-                        @{ Title = "Documentos Obsoletos"; Url = "$($Site.Url)/Obsoletos" }
+                        @{ Title = "Atuais"; Url = "$($Site.Url)/Atuais"; First = $True }
+                        @{ Title = "Obsoletos"; Url = "$($Site.Url)/Obsoletos" }
                     )
 
                 }
@@ -592,43 +632,33 @@ Function Set-SiteNavigation {
                 If ($Site.Url -Like "*/Registros") {
 
                     $Navigation = @(
-                        @{ Title = "Registros Atuais"; Url = "$($Site.Url)/Atuais"; First = $True }
-                        @{ Title = "Registros Obsoletos"; Url = "$($Site.Url)/Obsoletos" }
+                        @{ Title = "Atuais"; Url = "$($Site.Url)/Atuais"; First = $True }
+                        @{ Title = "Obsoletos"; Url = "$($Site.Url)/Obsoletos" }
                     )
 
                 }
 
             }
 
-            If ($Navigation) { 
-
-                $CurrentItem = $Null
-                $PreviousItem = $Null
-                $Nodes = Get-PnPNavigationNode -Connection:$Connection
+            If ($Navigation) {
 
                 ForEach ($Item In $Navigation) {
 
-                    $CurrentItem = $Nodes | Where-Object Title -EQ $Item.Title
-                    If ($CurrentItem -And $Force) { $CurrentItem | Remove-PnPNavigationNode -Force -Connection:$Connection }
+                    Add-PnPNavigationNode @Item -Location "QuickLaunch" -Connection:$Connection | Out-Null
 
-                    If (-Not $CurrentItem -Or $Force) {
+                }
 
-                        $PreviousItem = If ($PreviousItem) { 
+            }
 
-                            Add-PnPNavigationNode @Item -Location "QuickLaunch" -PreviousNode $PreviousItem -Connection:$Connection 
+            If ($TeamsNavigation) {
 
-                        } Else { 
+                $ParentNode = Get-PnPNavigationNode -Location "QuickLaunch" -Connection:$Connection | Where-Object Title -EQ "Arquivos de Equipes"
+                If (-Not $ParentNode) { Return }
 
-                            Add-PnPNavigationNode @Item -Location "QuickLaunch" -Connection:$Connection 
+                ForEach ($Item In $TeamsNavigation) {
 
-                        }
-
-                    } Else {
-
-                        $PreviousItem = $CurrentItem
-
-                    }
-
+                    Add-PnPNavigationNode @Item -Parent $ParentNode.Id -Location "QuickLaunch" -Connection:$Connection | Out-Null
+                    
                 }
 
             }

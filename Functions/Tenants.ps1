@@ -120,7 +120,7 @@ Function Get-Tenants {
     $Tenants = @(
 
         [PSCustomObject]@{
-            Slug     = 'siwindbr'
+            Slug     = 'siw'
             Name     = 'SIW Kits Eólicos'
             Domain   = 'siw.ind.br'
             BaseUrl  = 'https://siwindbr.sharepoint.com'
@@ -133,7 +133,7 @@ Function Get-Tenants {
         },
 
         [PSCustomObject]@{
-            Slug     = 'gcgestao'
+            Slug     = 'gc'
             Name     = 'GC Gestão'
             Domain   = 'gcgestao.com.br'
             BaseUrl  = 'https://gcgestao.sharepoint.com'
@@ -146,7 +146,7 @@ Function Get-Tenants {
         },
 
         [PSCustomObject]@{
-            Slug     = 'inteceletrica'
+            Slug     = 'intec'
             Name     = 'Intec Elétrica'
             Domain   = 'inteceletrica.com.br'
             BaseUrl  = 'https://inteceletrica.sharepoint.com'

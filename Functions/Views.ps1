@@ -88,7 +88,7 @@ Function Set-View {
 
     Process {
 
-        Invoke-Operation -Message "Setting parameters to view: $($View.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
+        Invoke-Operation -Message "Setting parameters to view: $($View.ParentList.ParentSite.Title) - $($View.ParentList.Title) - $($View.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
             $Connection = Connect-Site $View.ParentList.ParentSite -Return -Silent
             
@@ -98,7 +98,8 @@ Function Set-View {
 
                     $ViewFields = @('DocIcon', 'LinkFilename', 'Author', 'Created', 'Editor', 'Modified', 'FileSizeDisplay')
                     $ViewWidths = '<FieldRef Name="Nome" width="500" /><FieldRef Name="Criado Por" width="200" /><FieldRef Name="Criado Em" width="200" /><FieldRef Name="Modificado Por" width="200" /><FieldRef Name="Modificado Em" width="200" /><FieldRef Name="Tamanho do Arquivo" width="100" />'
-                
+                    Set-PnPView -Identity $View.Id -List $View.ParentList.Id -Values @{ ColumnWidth = $ViewWidths } -Fields $ViewFields -Connection $Connection | Out-Null
+
                 }
 
                 If ($View.ParentList.ParentSite.Url.EndsWith("/Documentos") -And $View.ServerRelativeUrl.EndsWith("Recentes.aspx")) { }
@@ -111,7 +112,11 @@ Function Set-View {
                 If ($View.ParentList.ParentSite.Url.EndsWith("/Registros") -And $View.ServerRelativeUrl.EndsWith("Pastas.aspx")) { }
                 If ($View.ParentList.ParentSite.Url.EndsWith("/Registros") -And $View.ServerRelativeUrl.EndsWith("Lista.aspx")) { }
 
-                Set-PnPView -Identity $View.Id -List $View.ParentList.Id -Values @{ ColumnWidth = $ViewWidths } -Fields $ViewFields -Connection $Connection | Out-Null
+            }
+
+            If ($View.ParentList.Type -Eq "List" -And $View.ViewType2 -NotIn ('TILES', 'CALENDAR', 'MODERNCALENDAR', 'KANBAN')) {
+
+                If ($View.ServerRelativeUrl.EndsWith("AllItems.aspx")) { }
 
             }
             

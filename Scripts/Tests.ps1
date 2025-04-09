@@ -7,13 +7,15 @@ Get-ChildItem -Path (Join-Path -Path "$PSScriptRoot" -ChildPath "..")
 | Get-ChildItem -Filter "*.ps1"
 | ForEach-Object { . $_.FullName }
 
+Return
+
 # Testing Tenants
 If (-Not $Tenants) { $Tenants = Get-Tenants }
-If (-Not $Tenant) { $Tenant = $Tenants[0] }
+If (-Not $Tenant) { $Tenant = $Tenants[2] }
 If (-Not (Test-TenantConnection $Tenant -Silent)) { Connect-Tenant $Tenant }
 
 # Testing Sites
-If (-Not $Sites) { $Sites = Get-Sites -SharePoint -OneDrive -Team -Channel }
+If (-Not $Sites) { $Sites = Get-Sites -SharePoint -OneDrive -Groups -Channels }
 If (-Not $Site) { $Site = $Sites[0] }
 If (-Not (Test-SiteConnection $Site -Silent)) { Connect-Site $Site }
 

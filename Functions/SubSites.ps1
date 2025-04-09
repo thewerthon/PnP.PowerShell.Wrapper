@@ -125,14 +125,12 @@ Function Set-SubSiteNavigation {
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
-        [Switch]$Silent,
-        [Switch]$Reset,
-        [Switch]$Force
+        [Switch]$Silent
     )
 
     Process {
 
-        Set-SiteNavigation $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Reset:$Reset -Force:$Force
+        Set-SiteNavigation $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
         
     }
 
