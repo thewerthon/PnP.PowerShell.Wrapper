@@ -61,7 +61,7 @@ Function Get-SubSite {
 
     Process {
 
-        $SubSite = Get-SubSites $Site -Recurse:$Recurse | Where-Object { $_.Id -Eq $Identity -Or $_.Url -Eq $Identity -Or $_.Title -Eq $Identity }
+        $SubSite = Get-SubSites $Site -Recurse:$Recurse | Where-Object { $_.Id -Like $Identity -Or $_.Url -Like $Identity -Or $_.Title -Like $Identity }
         If ($SubSite) { Return $SubSite[0] }
 
     }

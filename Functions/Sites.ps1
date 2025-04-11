@@ -127,7 +127,8 @@ Function Get-Sites {
         [Switch]$Groups,
         [Switch]$Teams,
         [Switch]$Channels,
-        [Switch]$Silent
+        [Switch]$Silent,
+        [Switch]$All
     )
 
     If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
@@ -135,9 +136,9 @@ Function Get-Sites {
     $Sites = @()
     $AllSites = Get-PnPTenantSite -IncludeOneDriveSites
 
-    If (-Not ($SharePoint -Or $OneDrive -Or $Groups -Or $Teams -Or $Channels)) { $Sites = $AllSites }
+    If (-Not ($SharePoint -Or $OneDrive -Or $Groups -Or $Teams -Or $Channels)) { $All = $True }
 
-    If ($SharePoint) {
+    If ($SharePoint -Or $All) {
         
         $TempSites = $AllSites | Where-Object Template -Match "SitePage" | Where-Object Url -NotMatch "/marca"
         $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue ($(If (Test-HomeSite $_) { "Home" } Else { "SharePoint" })) -PassThru }
@@ -145,7 +146,7 @@ Function Get-Sites {
     
     }
 
-    If ($OneDrive) {
+    If ($OneDrive -Or $All) {
         
         $TempSites = $AllSites | Where-Object Template -Match "SpsPers" | Where-Object Url -Match "/personal/"
         $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue "OneDrive" -PassThru }
@@ -153,9 +154,9 @@ Function Get-Sites {
     
     }
     
-    If ($Groups -Or $Teams) {
+    If ($Groups -Or $Teams -Or $All) {
         
-        If ($Groups) {
+        If ($Groups -Or $All) {
 
             $TempSites = $AllSites | Where-Object Template -Match "Group"
             $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue "Group" -PassThru }
@@ -171,7 +172,7 @@ Function Get-Sites {
     
     }
 
-    If ($Channels) {
+    If ($Channels -Or $All) {
         
         $TempSites = $AllSites | Where-Object Template -Match "TeamChannel"
         $TempSites = $TempSites | ForEach-Object { $_ | Add-Member -NotePropertyName "Type" -NotePropertyValue "Channel" -PassThru }
@@ -193,7 +194,7 @@ Function Get-Site {
 
         If ($Identity) {
 
-            $Site = Get-Sites | Where-Object { $_.SiteId -EQ $Identity -Or $_.Url -EQ $Identity -Or $_.Title -EQ $Identity }
+            $Site = Get-Sites | Where-Object { $_.SiteId -Like $Identity -Or $_.Url -Like $Identity -Or $_.Title -Like $Identity }
 
         } Else {
 

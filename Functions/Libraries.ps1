@@ -65,7 +65,7 @@ Function Get-Library {
 
     Process {
         
-        $Library = Get-Libraries $Site | Where-Object { $_.Id -Eq $Identity -Or $_.RootFolder.ServerRelativeUrl -Eq $Identity -Or $_.Title -Eq $Identity }
+        $Library = Get-Libraries $Site | Where-Object { $_.Id -Like $Identity -Or $_.RootFolder.ServerRelativeUrl -Like $Identity -Or $_.Title -Like $Identity }
         If ($Library) { Return $Library[0] }
 
     }

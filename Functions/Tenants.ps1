@@ -175,7 +175,7 @@ Function Get-Tenant {
 
         If ($Identity) {
 
-            $Tenant = Get-Tenants | Where-Object { $_.TenantID -Eq $Identity -Or $_.Slug -Eq $Identity -Or $_.Name -Eq $Identity }
+            $Tenant = Get-Tenants | Where-Object { $_.TenantID -Like $Identity -Or $_.Slug -Like $Identity -Or $_.Name -Like $Identity }
 
         } Else {
 

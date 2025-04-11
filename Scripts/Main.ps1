@@ -7,16 +7,27 @@ Get-ChildItem -Path (Join-Path -Path "$PSScriptRoot" -ChildPath "..")
 | Get-ChildItem -Filter "*.ps1"
 | ForEach-Object { . $_.FullName }
 
+# Get-Tenant
+$Tenant = Get-Tenant "intec"uydz
+Connect-Tenant $Tenant
+# Set-Tenant $Tenant
+
 # Get Sites
-Connect-Tenant (Get-Tenant "intec")
 $Sites = Get-Sites -SharePoint -OneDrive -Groups -Channels -Silent
 $Start = $Sites | Where-Object Type -EQ "Home" | Sort-Object Title
 $SharePoint = $Sites | Where-Object Type -EQ "SharePoint" | Sort-Object Title
-$SubSites = Get-SubSites $Start[0] | Sort-Object Title
+$SubSites = If ($Start) { Get-SubSites $Start[0] | Sort-Object Title } Else { $Null }
 $OneDrive = $Sites | Where-Object Type -EQ "OneDrive" | Sort-Object Title
 $Groups = $Sites | Where-Object Type -EQ "Group" | Sort-Object Title
 $Channels = $Sites | Where-Object Type -EQ "Channel" | Sort-Object Title
-$Sites = @($Start) + @($SharePoint) + @($SubSites) + @($Groups) + @($Channels)
+
+# Get Locations
+$Locations = @()
+if ($Start) { $Locations += $Start }
+if ($SharePoint) { $Locations += $SharePoint }
+if ($SubSites) { $Locations += $SubSites }
+if ($Groups) { $Locations += $Groups }
+if ($Channels) { $Locations += $Channels }
 
 # Process Home Site
 ForEach ($Site In $Start) {

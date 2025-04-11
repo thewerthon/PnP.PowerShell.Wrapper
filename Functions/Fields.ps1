@@ -64,7 +64,7 @@ Function Get-Field {
 
     Process {
         
-        $Field = Get-Fields $List | Where-Object { $_.Id -Eq $Identity -Or $_.InternalName -EQ $Identity -Or $_.Title -EQ $Identity }
+        $Field = Get-Fields $List | Where-Object { $_.Id -Like $Identity -Or $_.InternalName -Like $Identity -Or $_.Title -Like $Identity }
         If ($Field) { Return $Field[0] }
 
     }

@@ -64,7 +64,7 @@ Function Get-View {
 
     Process {
         
-        $View = Get-Views $List | Where-Object { $_.Id -Eq $Identity -Or $_.ServerRelativeUrl -Eq $Identity -Or $_.Title -Eq $Identity }
+        $View = Get-Views $List | Where-Object { $_.Id -Like $Identity -Or $_.ServerRelativeUrl -Like $Identity -Or $_.Title -Like $Identity }
         If ($View) { Return $View[0] }
 
     }

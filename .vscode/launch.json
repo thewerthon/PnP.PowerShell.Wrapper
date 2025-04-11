@@ -2,10 +2,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Execute",
+            "name": "Main",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}\\Scripts\\Tests.ps1",
+            "script": "${workspaceFolder}\\Scripts\\Main.ps1",
+            "args": []
+        },
+        {
+            "name": "Test",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\Scripts\\Test.ps1",
+            "args": []
+        },
+        {
+            "name": "Temp",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\Scripts\\Temp.ps1",
             "args": []
         }
     ]

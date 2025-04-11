@@ -65,7 +65,7 @@ Function Get-List {
 
     Process {
         
-        $List = Get-Lists $Site | Where-Object { $_.Id -Eq $Identity -Or $_.RootFolder.ServerRelativeUrl -Eq $Identity -Or $_.Title -Eq $Identity }
+        $List = Get-Lists $Site | Where-Object { $_.Id -Like $Identity -Or $_.RootFolder.ServerRelativeUrl -Like $Identity -Or $_.Title -Like $Identity }
         If ($List) { Return $List[0] }
 
     }
