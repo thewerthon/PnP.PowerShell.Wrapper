@@ -8,7 +8,7 @@ Get-ChildItem -Path (Join-Path -Path "$PSScriptRoot" -ChildPath "..")
 | ForEach-Object { . $_.FullName }
 
 # Get-Tenant
-$Tenant = Get-Tenant "intec"uydz
+$Tenant = Get-Tenant "intec"
 Connect-Tenant $Tenant
 # Set-Tenant $Tenant
 

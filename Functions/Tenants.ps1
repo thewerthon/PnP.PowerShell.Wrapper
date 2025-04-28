@@ -244,9 +244,9 @@ Function Set-Tenant {
                 FileAnonymousLinkType                      = "View"
                 FolderAnonymousLinkType                    = "View"
                 HideDefaultThemes                          = $True
-                HideSyncButtonOnDocLib                     = $True
-                HideSyncButtonOnODB                        = $True
-                HideSyncButtonOnTeamSite                   = $True
+                HideSyncButtonOnDocLib                     = $False
+                HideSyncButtonOnODB                        = $False
+                HideSyncButtonOnTeamSite                   = $False
                 IncludeAtAGlanceInShareEmails              = $True
                 IsDataAccessInCardDesignerEnabled          = $True
                 IsFluidEnabled                             = $True
