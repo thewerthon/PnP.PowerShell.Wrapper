@@ -89,9 +89,10 @@ Function Set-List {
 
     Process {
 
-        Invoke-Operation -Message "Setting parameters to list: $($List.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
+        Invoke-Operation -Message "Setting parameters to list: $($List.ParentSite.Title) - $($List.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
             $Connection = Connect-Site $List.ParentSite -Return -Silent
+            If ($List.ParentSite.LockState -Eq "ReadOnly") { Start-Sleep -Milliseconds 50; Return }
             
             $ListParams = @{
                 EnableAutoExpirationVersionTrim = $True

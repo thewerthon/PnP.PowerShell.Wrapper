@@ -92,6 +92,18 @@ Function Set-View {
             
             $Connection = Connect-Site $View.ParentList.ParentSite -Return -Silent
             
+            If ($View.ParentList.Type -Eq "Library" -And $View.ServerRelativeUrl -Match "/personal/") {
+
+                If ($View.ServerRelativeUrl.EndsWith("All.aspx")) {
+
+                    $ViewFields = @('DocIcon', 'LinkFilename', 'Editor', 'Modified', 'SharedWith')
+                    $ViewWidths = '<FieldRef Name="Nome" width="350" /><FieldRef Name="Modificado Por" width="180" /><FieldRef Name="Modificado Em" width="180" /><FieldRef Name="Compartilhamento" width="120" /><FieldRef Name="Tamanho do arquivo" width="100" /><FieldRef Name="Atividade" width="200" />'
+                    Set-PnPView -Identity $View.Id -List $View.ParentList.Id -Values @{ ColumnWidth = $ViewWidths } -Fields $ViewFields -Connection $Connection | Out-Null
+
+                }
+                
+            }
+
             If ($View.ParentList.Type -Eq "Library" -And $View.ViewType2 -NotIn ('TILES', 'CALENDAR', 'MODERNCALENDAR', 'KANBAN')) {
 
                 If ($View.ServerRelativeUrl.EndsWith("AllItems.aspx")) {

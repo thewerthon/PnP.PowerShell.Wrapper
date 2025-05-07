@@ -354,8 +354,7 @@ Function Set-Site {
         [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
         [Switch]$DisplayInfos,
         [Switch]$SuppressErrors,
-        [Switch]$Silent,
-        [Switch]$SubSites
+        [Switch]$Silent
     )
 
     Begin {
@@ -366,9 +365,10 @@ Function Set-Site {
 
     Process {
 
+        If ($Site.Type -Eq "OneDrive") { Start-Sleep -Milliseconds 50; Return }
+
         Invoke-Operation -Message "Setting parameters to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
-            If ($Site.Type -Eq "OneDrive") { Start-Sleep -Milliseconds 50; Return }
             $Connection = Connect-Site $Site -Return -Silent
 
             $SiteParams = @{
@@ -392,8 +392,8 @@ Function Set-Site {
                 $SiteParams.SharingCapability = "ExternalUserAndGuestSharing"
             
             }
-
-            If (-Not $SubSites) {
+            
+            If (-Not $Site.ParentSite) {
 
                 Set-PnPTenantSite -Identity $Site.Url @SiteParams -Connection $Connection
                 Disable-PnPSharingForNonOwnersOfSite -Identity $Site.Url -Connection $Connection
@@ -428,6 +428,8 @@ Function Set-SiteAdmins {
     }
 
     Process {
+
+        If ($Site.ParentSite) { Start-Sleep -Milliseconds 50; Return }
 
         Invoke-Operation -Message "Setting administrators to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
@@ -471,9 +473,10 @@ Function Set-SiteAppearance {
 
     Process {
 
+        If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
+        
         Invoke-Operation -Message "Setting appearance to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
-            If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
             $Connection = Connect-Site $Site -Return -Silent
 
             If (-Not (Get-PnPTenantTheme $TenantTheme.name -ErrorAction Ignore)) {
@@ -511,9 +514,10 @@ Function Set-SiteHomePage {
 
     Process {
 
+        If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
+        
         Invoke-Operation -Message "Setting homepage to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
-            If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
             $Connection = Connect-Site $Site -Return -Silent
         
             $Pages = Get-PnPPage -Connection:$Connection
@@ -563,9 +567,10 @@ Function Set-SiteNavigation {
 
     Process {
 
+        If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
+        
         Invoke-Operation -Message "Setting navigation to site: $($Site.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
-            If ($Site.Type -In ("OneDrive") ) { Start-Sleep -Milliseconds 50; Return }
             $Connection = Connect-Site $Site -Return -Silent
         
             $Navigation = $Null

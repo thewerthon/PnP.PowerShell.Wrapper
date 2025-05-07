@@ -254,17 +254,3 @@ Function Invoke-Operation {
     }
 
 }
-
-Function Invoke-UpdateModule {
-
-    Param(
-        [String]$ModuleName = "PnP.PowerShell",
-        [Switch]$AllowPrerelease,
-        [Switch]$Reinstall
-    )
-    
-    If ($Reinstall) { Uninstall-Module $ModuleName -Force -ErrorAction Ignore }
-    If (-Not (Get-InstalledModule $ModuleName -ErrorAction Ignore)) { If ($AllowPrerelease) { Install-Module $ModuleName -AllowPrerelease -SkipPublisherCheck -Force } Else { Install-Module $ModuleName -Force } }
-    If ($AllowPrerelease) { Update-Module $ModuleName -AllowPrerelease -Force } Else { Update-Module $ModuleName -Force }
-
-}

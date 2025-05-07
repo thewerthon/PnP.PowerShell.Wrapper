@@ -79,7 +79,7 @@ Function Set-SubSite {
 
     Process {
 
-        Set-Site $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -SubSites
+        Set-Site $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
 
     }
 

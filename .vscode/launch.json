@@ -9,10 +9,10 @@
             "args": []
         },
         {
-            "name": "Test",
+            "name": "Tests",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}\\Scripts\\Test.ps1",
+            "script": "${workspaceFolder}\\Scripts\\Tests.ps1",
             "args": []
         },
         {

@@ -89,9 +89,10 @@ Function Set-Library {
 
     Process {
 
-        Invoke-Operation -Message "Setting parameters to library: $($Library.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
+        Invoke-Operation -Message "Setting parameters to library: $($Library.ParentSite.Title) - $($Library.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
             $Connection = Connect-Site $Library.ParentSite -Return -Silent
+            If ($Library.ParentSite.LockState -Eq "ReadOnly") { Start-Sleep -Milliseconds 50; Return }
 
             $LibraryParams = @{
                 DraftVersionVisibility          = "Reader"

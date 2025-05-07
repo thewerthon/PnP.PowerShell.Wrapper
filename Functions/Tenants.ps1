@@ -86,7 +86,14 @@ Function Connect-Tenant {
             $Password = ConvertTo-SecureString -String $Tenant.Domain -AsPlainText -Force
             $Certificate = Get-ChildItem -Path (Get-Path("Certificates")) -Recurse | Where-Object Name -Like "$($Tenant.Name).pfx"
             Connect-PnPOnline -Tenant $Tenant.Domain -Url $Tenant.AdminUrl -ClientId $Tenant.ClientID -CertificatePath $Certificate.FullName -CertificatePassword $Password -ReturnConnection:$Return
-            If (-Not $Return) { Set-Variable -Name "CurrentTenant" -Value $Tenant -Scope Global; Set-Variable -Name "CurrentSite" -Value (Get-PnPTenantSite $Tenant.AdminUrl) -Scope Global }
+
+            If (-Not $Return) {
+                
+                Set-Variable -Name "CurrentTenant" -Value $Tenant -Scope Global
+                Set-Variable -Name "CurrentSite" -Value (Get-PnPTenantSite $Tenant.AdminUrl) -Scope Global
+                $Host.UI.RawUI.WindowTitle = $Tenant.Name
+            
+            }
 
         }
 
@@ -110,6 +117,7 @@ Function Disconnect-Tenant {
         Disconnect-PnPOnline
         Set-Variable -Name "CurrentTenant" -Value $Null -Scope Global
         Set-Variable -Name "CurrentSite" -Value $Null -Scope Global
+        $Host.UI.RawUI.WindowTitle = $Null
 
     }
 
@@ -244,9 +252,9 @@ Function Set-Tenant {
                 FileAnonymousLinkType                      = "View"
                 FolderAnonymousLinkType                    = "View"
                 HideDefaultThemes                          = $True
-                HideSyncButtonOnDocLib                     = $False
-                HideSyncButtonOnODB                        = $False
-                HideSyncButtonOnTeamSite                   = $False
+                HideSyncButtonOnDocLib                     = $True
+                HideSyncButtonOnODB                        = $True
+                HideSyncButtonOnTeamSite                   = $True
                 IncludeAtAGlanceInShareEmails              = $True
                 IsDataAccessInCardDesignerEnabled          = $True
                 IsFluidEnabled                             = $True
@@ -270,12 +278,13 @@ Function Set-Tenant {
                 SelfServiceSiteCreationDisabled            = $True
                 SharingCapability                          = "ExternalUserAndGuestSharing"
                 ShowAllUsersClaim                          = $False
-                ShowEveryoneClaim                          = $False
-                ShowEveryoneExceptExternalUsersClaim       = $False
+                ShowEveryoneClaim                          = $True
+                ShowEveryoneExceptExternalUsersClaim       = $True
                 ShowOpenInDesktopOptionForSyncedFiles      = $True
                 SocialBarOnSitePagesDisabled               = $False
                 SpecialCharactersStateInFileFolderNames    = "Allowed"
                 ViewersCanCommentOnMediaDisabled           = $False
+                ViewInFileExplorerEnabled                  = $False
             }
             
             Set-PnPTenant @TenantParams -Force -Connection:$Connection
