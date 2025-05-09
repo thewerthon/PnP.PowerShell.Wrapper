@@ -100,17 +100,12 @@ Function Set-Field {
 
         }
 
-        If ($Field.ParentList.ParentSite.Url -Match "/personal/") {
-
-            $FieldParams.CustomFormatter = $Null
-
-        }
-
         If ($FieldParams) {
 
             Invoke-Operation -Message "Setting parameters to field: $($Field.ParentList.ParentSite.Title) - $($Field.ParentList.Title) - $($Field.InternalName)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
                 $Connection = Connect-Site $Field.ParentList.ParentSite -Return -Silent
+                If ($Field.ParentList.ParentSite.Url -Match "/personal/") { $FieldParams.CustomFormatter = $Null }
                 Set-PnPField -Identity $Field.Id -List $Field.ParentList.Id -Values $FieldParams -Connection $Connection
             
             }
