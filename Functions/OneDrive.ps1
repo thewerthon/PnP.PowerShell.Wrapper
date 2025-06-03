@@ -17,7 +17,7 @@ Function Get-OneDriveConfig {
             WebUrl    = $TeamSite.Url
             ListId    = (Get-PnPList -Identity "Documentos" -Connection $Connection).Id
             GroupId   = $TeamSite.RelatedGroupId
-            WebTitle  = "Intec Elétrica"
+            WebTitle  = $CurrentTenant.Name
             ListTitle = $TeamSite.Title
         }
 
