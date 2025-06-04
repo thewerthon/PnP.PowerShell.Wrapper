@@ -11,7 +11,7 @@ Function Get-OneDriveConfig {
 
         $OneDriveConfig += [Ordered]@{
             Name      = $TeamSite.Title
-            Icon      = "C:\Startup\OneDrive\Intec Elétrica\Icons\Default.ico"
+            Icon      = "C:\Startup\OneDrive\$($CurrentTenant.Name)\Icons\Default.ico"
             SiteId    = (Get-PnPSite -Includes Id -Connection $Connection).Id
             WebId     = (Get-PnPWeb -Includes Id -Connection $Connection).Id
             WebUrl    = $TeamSite.Url
