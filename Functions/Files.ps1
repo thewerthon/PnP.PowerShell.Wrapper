@@ -1,41 +1,41 @@
 # Clear Versions
-Function Clear-FileVersions {
+function Clear-FileVersions {
 
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Library,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Library,
+		[Switch]$DisplayInfos,
+		[Switch]$SuppressErrors,
+		[Switch]$Silent
+	)
 
-    Begin {
+	begin {
 
-        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
+		if (-not (Test-TenantConnection -Silent:$Silent)) { return }
         
-    }
+	}
 
-    Process {
+	process {
 
-        $Connection = Connect-Site $Library.ParentSite -Return -Silent
-        If ($Library.ParentSite.LockState -Eq "ReadOnly") { Start-Sleep -Milliseconds 50; Return }
+		$Connection = Connect-Site $Library.ParentSite -Return -Silent
+		if ($Library.ParentSite.LockState -eq "ReadOnly") { Start-Sleep -Milliseconds 50; return }
         
-        $Items = Get-PnPListItem -List $Library.Title -PageSize 1000 -Fields "FileRef", "FileLeafRef" -Connection $Connection
-        If ($Items) { Write-Message "Clearing file versions in library: $($Library.ParentSite.Title) - $($Library.Title)" -Color Cyan -Silent:$Silent }
+		$Items = Get-PnPListItem -List $Library.Title -PageSize 1000 -Fields "FileRef", "FileLeafRef" -Connection $Connection
+		if ($Items) { Write-Message "Clearing file versions in library: $($Library.ParentSite.Title) - $($Library.Title)" -Color Cyan -Silent:$Silent }
 
-        ForEach ($Item In $Items) {
+		foreach ($Item in $Items) {
 
-            If ($Item.FileSystemObjectType -Eq 'File') {
+			if ($Item.FileSystemObjectType -eq 'File') {
                 
-                Invoke-Operation -Message "> Now processing: $($Item.FieldValues.FileRef)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
+				Invoke-Operation -Message "> Now processing: $($Item.FieldValues.FileRef)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
 
-                    Remove-PnPFileVersion -Url $Item.FieldValues.FileRef -All -Force -Connection $Connection
+					Remove-PnPFileVersion -Url $Item.FieldValues.FileRef -All -Force -Connection $Connection
                     
-                }
+				}
 
-            }
+			}
 
-        }
+		}
         
-    }
+	}
     
 }

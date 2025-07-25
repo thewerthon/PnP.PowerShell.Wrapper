@@ -17,9 +17,9 @@ Get-ChildItem -Path $Folder.FullName
 | ForEach-Object { . $_.FullName }
 
 # Connect Tenant
-While (-Not $Global:CurrentTenant) {
+while (-not $Global:CurrentTenant) {
 
-    $Tenant = Get-Tenant (Read-Host "Tenant to connect")
-    If (-Not (Test-TenantConnection $Tenant -Silent)) { Connect-Tenant $Tenant }
+	$Tenant = Get-Tenant (Read-Host "Tenant to connect")
+	if (-not (Test-TenantConnection $Tenant -Silent)) { Connect-Tenant $Tenant }
 
 }

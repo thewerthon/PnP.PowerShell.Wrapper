@@ -1,137 +1,137 @@
-Function Test-SubSite {
+function Test-SubSite {
 
-    Param(
-        [Parameter(ValueFromPipeline = $True)][Object]$SubSite,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(ValueFromPipeline = $True)][Object]$SubSite,
+		[Switch]$Silent
+	)
 
-    Try {
+	try {
 
-        If (-Not ((Test-SingleObject $SubSite -Silent:$Silent) -And (Test-Properties $SubSite Url, Title -Silent:$Silent))) {
+		if (-not ((Test-SingleObject $SubSite -Silent:$Silent) -and (Test-Properties $SubSite Url, Title -Silent:$Silent))) {
 
-            Write-Message "Invalid subsite." -Color "Red" -Silent:$Silent
-            Return $False
+			Write-Message "Invalid subsite." -Color "Red" -Silent:$Silent
+			return $False
 
-        } Else {
+		} else {
 
-            Return $True
+			return $True
 
-        }
+		}
 
-    } Catch {
+	} catch {
 
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
 
-    }
+	}
 
 }
 
-Function Get-SubSites {
+function Get-SubSites {
 
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Switch]$Recurse
-    )
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
+		[Switch]$Recurse
+	)
 
-    Process {
+	process {
 
-        $Connection = Connect-Site $Site -Return -Silent
-        $SubSites = Get-PnPSubWeb -Connection $Connection -Recurse:$Recurse
+		$Connection = Connect-Site $Site -Return -Silent
+		$SubSites = Get-PnPSubWeb -Connection $Connection -Recurse:$Recurse
 
-        Return $SubSites | ForEach-Object {
+		return $SubSites | ForEach-Object {
 
-            $_
-            | Add-Member -NotePropertyName "Type" -NotePropertyValue "SharePoint" -PassThru
-            | Add-Member -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
+			$_
+			| Add-Member -NotePropertyName "Type" -NotePropertyValue "SharePoint" -PassThru
+			| Add-Member -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
                 
-        }
+		}
 
-    }
-
-}
-
-Function Get-SubSite {
-
-    Param(
-        [Parameter(Mandatory = $True)][String]$Identity,
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
-        [Switch]$Recurse
-    )
-
-    Process {
-
-        $SubSite = Get-SubSites $Site -Recurse:$Recurse | Where-Object { $_.Id -Like $Identity -Or $_.Url -Like $Identity -Or $_.Title -Like $Identity }
-        If ($SubSite) { Return $SubSite[0] }
-
-    }
+	}
 
 }
 
-Function Set-SubSite {
+function Get-SubSite {
 
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(Mandatory = $True)][String]$Identity,
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site,
+		[Switch]$Recurse
+	)
 
-    Process {
+	process {
 
-        Set-Site $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
+		$SubSite = Get-SubSites $Site -Recurse:$Recurse | Where-Object { $_.Id -like $Identity -or $_.Url -like $Identity -or $_.Title -like $Identity }
+		if ($SubSite) { return $SubSite[0] }
 
-    }
-
-}
-
-Function Set-SubSiteAppearance {
-
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
-
-    Process {
-
-        Set-SiteAppearance $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
-
-    }
+	}
 
 }
 
-Function Set-SubSiteHomePage {
+function Set-SubSite {
 
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
+		[Switch]$DisplayInfos,
+		[Switch]$SuppressErrors,
+		[Switch]$Silent
+	)
 
-    Process {
+	process {
 
-        Set-SiteHomePage $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
+		Set-Site $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
+
+	}
+
+}
+
+function Set-SubSiteAppearance {
+
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
+		[Switch]$DisplayInfos,
+		[Switch]$SuppressErrors,
+		[Switch]$Silent
+	)
+
+	process {
+
+		Set-SiteAppearance $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
+
+	}
+
+}
+
+function Set-SubSiteHomePage {
+
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
+		[Switch]$DisplayInfos,
+		[Switch]$SuppressErrors,
+		[Switch]$Silent
+	)
+
+	process {
+
+		Set-SiteHomePage $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
         
-    }
+	}
 
 }
 
-Function Set-SubSiteNavigation {
+function Set-SubSiteNavigation {
 
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$SubSite,
+		[Switch]$DisplayInfos,
+		[Switch]$SuppressErrors,
+		[Switch]$Silent
+	)
 
-    Process {
+	process {
 
-        Set-SiteNavigation $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
+		Set-SiteNavigation $SubSite -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent
         
-    }
+	}
 
 }

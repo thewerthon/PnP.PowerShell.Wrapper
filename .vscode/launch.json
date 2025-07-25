@@ -1,26 +1,26 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Main",
-            "type": "PowerShell",
-            "request": "launch",
-            "script": "${workspaceFolder}\\Scripts\\Main.ps1",
-            "args": []
-        },
-        {
-            "name": "Tests",
-            "type": "PowerShell",
-            "request": "launch",
-            "script": "${workspaceFolder}\\Scripts\\Tests.ps1",
-            "args": []
-        },
-        {
-            "name": "Temp",
-            "type": "PowerShell",
-            "request": "launch",
-            "script": "${workspaceFolder}\\Scripts\\Temp.ps1",
-            "args": []
-        }
-    ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Main",
+			"type": "PowerShell",
+			"request": "launch",
+			"script": "${workspaceFolder}\\Scripts\\Main.ps1",
+			"args": []
+		},
+		{
+			"name": "Tests",
+			"type": "PowerShell",
+			"request": "launch",
+			"script": "${workspaceFolder}\\Scripts\\Tests.ps1",
+			"args": []
+		},
+		{
+			"name": "Temp",
+			"type": "PowerShell",
+			"request": "launch",
+			"script": "${workspaceFolder}\\Scripts\\Temp.ps1",
+			"args": []
+		}
+	]
 }

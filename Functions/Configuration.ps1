@@ -1,236 +1,236 @@
 # Config All
-Function Start-AllConfig {
+function Start-AllConfig {
 
-    Start-TenantConfig
-    Start-SitesConfig -Recurse
+	Start-TenantConfig
+	Start-SitesConfig -Recurse
 
 }
 
 # Config Tenant
-Function Start-TenantConfig {
+function Start-TenantConfig {
 
-    If (-Not (Test-TenantConnection)) { Return }
+	if (-not (Test-TenantConnection)) { return }
     
-    $Tenant = Get-Tenant
-    $Tenant | Set-Tenant
+	$Tenant = Get-Tenant
+	$Tenant | Set-Tenant
 
 }
 
 # Config Site
-Function Start-SiteConfig {
+function Start-SiteConfig {
 
-    Param(
-        [Switch]$Recurse
-    )
+	param(
+		[Switch]$Recurse
+	)
     
-    $Site = Read-Host "Site"
-    $Site = Get-Site $Site
-    If ($Site) { Start-SitesConfig $Site -Recurse:$Recurse }
+	$Site = Read-Host "Site"
+	$Site = Get-Site $Site
+	if ($Site) { Start-SitesConfig $Site -Recurse:$Recurse }
 
 }
 
 # Config Sites
-Function Start-SitesConfig {
+function Start-SitesConfig {
 
-    Param(
-        [Parameter(Mandatory = $True)][Object]$Sites,
-        [Switch]$Recurse
-    )
+	param(
+		[Parameter(Mandatory = $True)][Object]$Sites,
+		[Switch]$Recurse
+	)
     
-    # Check Connection
-    If (-Not (Test-TenantConnection)) { Return }
+	# Check Connection
+	if (-not (Test-TenantConnection)) { return }
     
-    # Sort Sites
-    $Sites = $Sites | Sort-Object Title
+	# Sort Sites
+	$Sites = $Sites | Sort-Object Title
     
-    # Process Sites
-    ForEach ($Site In $Sites) {
+	# Process Sites
+	foreach ($Site in $Sites) {
 
-        $Site | Set-Site
-        $Site | Set-SiteAdmins
-        $Site | Set-SiteAppearance
-        $Site | Set-SiteHomePage
-        $Site | Set-SiteNavigation
+		$Site | Set-Site
+		$Site | Set-SiteAdmins
+		$Site | Set-SiteAppearance
+		$Site | Set-SiteHomePage
+		$Site | Set-SiteNavigation
 
-        $Libraries = Get-Libraries $Site
-        If ($Libraries) { Start-LibrariesConfig $Libraries }
+		$Libraries = Get-Libraries $Site
+		if ($Libraries) { Start-LibrariesConfig $Libraries }
 
-        $Lists = Get-Lists $Site
-        If ($Lists) { Start-ListsConfig $Lists }
+		$Lists = Get-Lists $Site
+		if ($Lists) { Start-ListsConfig $Lists }
 
-        If ($Recurse) {
+		if ($Recurse) {
 
-            $SubSites = Get-SubSites $Site
-            Start-SitesConfig $SubSites -Recurse
+			$SubSites = Get-SubSites $Site
+			Start-SitesConfig $SubSites -Recurse
 
-        }
+		}
         
-    }
+	}
 
 }
 
 # Config SubSite
-Function Start-SubSiteConfig {
+function Start-SubSiteConfig {
 
-    Param(
-        [Switch]$Recurse
-    )
+	param(
+		[Switch]$Recurse
+	)
     
-    $Site = Read-Host "Site"
-    $Site = Get-Site $Site
+	$Site = Read-Host "Site"
+	$Site = Get-Site $Site
 
-    If ($Site) {
+	if ($Site) {
 
-        $SubSite = Read-Host "SubSite"
-        $SubSite = Get-SubSite $SubSite $Site
-        If ($SubSite) { Start-SitesConfig $SubSite -Recurse:$Recurse }
+		$SubSite = Read-Host "SubSite"
+		$SubSite = Get-SubSite $SubSite $Site
+		if ($SubSite) { Start-SitesConfig $SubSite -Recurse:$Recurse }
 
-    }
+	}
 
 }
 
 # Config SubSites
-Function Start-SubSitesConfig {
+function Start-SubSitesConfig {
 
-    Param(
-        [Object]$SubSites,
-        [Switch]$Recurse
-    )
+	param(
+		[Object]$SubSites,
+		[Switch]$Recurse
+	)
     
-    # Check Connection
-    If (-Not (Test-TenantConnection)) { Return }
+	# Check Connection
+	if (-not (Test-TenantConnection)) { return }
     
-    # Check Parameter
-    If ($SubSites) {
+	# Check Parameter
+	if ($SubSites) {
 
-        Start-SitesConfig $SubSites -Recurse:$Recurse
+		Start-SitesConfig $SubSites -Recurse:$Recurse
 
-    } Else {
+	} else {
 
-        $Site = Read-Host "Site"
-        $Site = Get-Site $Site
+		$Site = Read-Host "Site"
+		$Site = Get-Site $Site
 
-        If ($Site) {
+		if ($Site) {
 
-            $SubSites = Get-SubSites $Site
-            If ($SubSites) { Start-SubSitesConfig $SubSites }
+			$SubSites = Get-SubSites $Site
+			if ($SubSites) { Start-SubSitesConfig $SubSites }
 
-        }
+		}
 
-    }
+	}
 
 }
 
 # Config Library
-Function Start-LibraryConfig {
+function Start-LibraryConfig {
 
-    $Site = Read-Host "Site"
-    $Site = Get-Site $Site
+	$Site = Read-Host "Site"
+	$Site = Get-Site $Site
 
-    If ($Site) {
+	if ($Site) {
 
-        $Library = Read-Host "Library"
-        $Library = Get-Library $Library $Site
-        If ($Library) { Start-LibrariesConfig $Library }
+		$Library = Read-Host "Library"
+		$Library = Get-Library $Library $Site
+		if ($Library) { Start-LibrariesConfig $Library }
 
-    }
+	}
 
 }
 
 # Config Libraries
-Function Start-LibrariesConfig {
+function Start-LibrariesConfig {
 
-    Param(
-        [Object]$Libraries
-    )
+	param(
+		[Object]$Libraries
+	)
     
-    # Check Connection
-    If (-Not (Test-TenantConnection)) { Return }
+	# Check Connection
+	if (-not (Test-TenantConnection)) { return }
     
-    # Check Parameter
-    If ($Libraries) {
+	# Check Parameter
+	if ($Libraries) {
 
-        $Libraries = $Libraries | Sort-Object Title
-        ForEach ($Library In $Libraries) {
+		$Libraries = $Libraries | Sort-Object Title
+		foreach ($Library in $Libraries) {
 
-            $Fields = Get-Fields $Library
-            $Views = Get-Views $Library
+			$Fields = Get-Fields $Library
+			$Views = Get-Views $Library
 
-            $Library | Set-Library
-            $Fields | Set-Field
-            $Views | Set-View
+			$Library | Set-Library
+			$Fields | Set-Field
+			$Views | Set-View
 
-        }
+		}
 
-    } Else {
+	} else {
 
-        $Site = Read-Host "Site"
-        $Site = Get-Site $Site
+		$Site = Read-Host "Site"
+		$Site = Get-Site $Site
 
-        If ($Site) {
+		if ($Site) {
 
-            $Libraries = Get-Libraries $Site
-            If ($Libraries) { Start-LibrariesConfig $Libraries }
+			$Libraries = Get-Libraries $Site
+			if ($Libraries) { Start-LibrariesConfig $Libraries }
 
-        }
+		}
 
-    }
+	}
 
 }
 
 # Config List
-Function Start-ListConfig {
+function Start-ListConfig {
 
-    $Site = Read-Host "Site"
-    $Site = Get-Site $Site
+	$Site = Read-Host "Site"
+	$Site = Get-Site $Site
 
-    If ($Site) {
+	if ($Site) {
 
-        $List = Read-Host "List"
-        $List = Get-List $List $Site
-        If ($List) { Start-ListsConfig $List }
+		$List = Read-Host "List"
+		$List = Get-List $List $Site
+		if ($List) { Start-ListsConfig $List }
 
-    }
+	}
 
 }
 
 # Config Lists
-Function Start-ListsConfig {
+function Start-ListsConfig {
 
-    Param(
-        [Object]$Lists
-    )
+	param(
+		[Object]$Lists
+	)
     
-    # Check Connection
-    If (-Not (Test-TenantConnection)) { Return }
+	# Check Connection
+	if (-not (Test-TenantConnection)) { return }
     
-    # Check Parameter
-    If ($Lists) {
+	# Check Parameter
+	if ($Lists) {
 
-        $Lists = $Lists | Sort-Object Title
-        ForEach ($List In $Lists) {
+		$Lists = $Lists | Sort-Object Title
+		foreach ($List in $Lists) {
 
-            $Fields = Get-Fields $List
-            $Views = Get-Views $List
+			$Fields = Get-Fields $List
+			$Views = Get-Views $List
 
-            $List | Set-List
-            $Fields | Set-Field
-            $Views | Set-View
+			$List | Set-List
+			$Fields | Set-Field
+			$Views | Set-View
 
-        }
+		}
 
-    } Else {
+	} else {
 
-        $Site = Read-Host "Site"
-        $Site = Get-Site $Site
+		$Site = Read-Host "Site"
+		$Site = Get-Site $Site
 
-        If ($Site) {
+		if ($Site) {
             
-            $Lists = Get-Lists $Site
-            If ($Lists) { Start-ListsConfig $Lists }
+			$Lists = Get-Lists $Site
+			if ($Lists) { Start-ListsConfig $Lists }
 
-        }
+		}
 
-    }
+	}
 
 }

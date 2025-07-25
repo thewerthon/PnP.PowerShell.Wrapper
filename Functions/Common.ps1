@@ -1,256 +1,256 @@
-Function Get-Root {
+function Get-Root {
 
-    If ($PSScriptRoot) {
+	if ($PSScriptRoot) {
         
-        Return Join-Path -Path "$PSScriptRoot" -ChildPath ".."
+		return Join-Path -Path "$PSScriptRoot" -ChildPath ".."
     
-    } Else {
+	} else {
         
-        Return (Get-Location).Path
+		return (Get-Location).Path
     
-    }
+	}
 
 }
 
-Function Get-Path {
+function Get-Path {
 
-    Param(
-        [Parameter(Mandatory = $True)][String]$Path
-    )
+	param(
+		[Parameter(Mandatory = $True)][String]$Path
+	)
 
-    Return Join-Path -Path (Get-Root) -ChildPath $Path
-
-}
-
-Function Test-Param {
-
-    Param (
-        [Parameter(Mandatory = $True)][String]$Name,
-        [Parameter(Mandatory = $True)][Hashtable]$Params,
-        [Switch]$Silent
-    )
-
-    Try {
-
-        Return $Params.ContainsKey($Name)
-
-    } Catch {
-
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
-
-    }
+	return Join-Path -Path (Get-Root) -ChildPath $Path
 
 }
 
-Function Test-Object {
+function Test-Param {
 
-    Param(
-        [Object]$Object = $Null,
-        [Switch]$Silent
-    )
+	param (
+		[Parameter(Mandatory = $True)][String]$Name,
+		[Parameter(Mandatory = $True)][Hashtable]$Params,
+		[Switch]$Silent
+	)
 
-    Try {
+	try {
 
-        Return $Null -Ne $Object
+		return $Params.ContainsKey($Name)
 
-    } Catch {
+	} catch {
 
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
 
-    }
-
-}
-
-Function Test-NullObject {
-
-    Param(
-        [Object]$Object = $Null,
-        [Switch]$Silent
-    )
-
-    Try {
-
-        Return $Null -Eq $Object
-
-    } Catch {
-
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
-
-    }
+	}
 
 }
 
-Function Test-SingleObject {
+function Test-Object {
 
-    Param(
-        [Object]$Object = $Null,
-        [Switch]$Silent
-    )
+	param(
+		[Object]$Object = $Null,
+		[Switch]$Silent
+	)
 
-    Try {
+	try {
 
-        Return $Null -Ne $Object -And $Object.Count -Eq 1
+		return $Null -ne $Object
 
-    } Catch {
+	} catch {
 
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
 
-    }
-
-}
-
-Function Test-SingleOrNullObject {
-
-    Param(
-        [Object]$Object = $Null,
-        [Switch]$Silent
-    )
-
-    Try {
-
-        Return $Null -Eq $Object -Or $Object.Count -Eq 1
-
-    } Catch {
-
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
-
-    }
+	}
 
 }
 
-Function Test-CollectionObject {
+function Test-NullObject {
 
-    Param(
-        [Object]$Object = $Null,
-        [Switch]$Silent
-    )
+	param(
+		[Object]$Object = $Null,
+		[Switch]$Silent
+	)
 
-    Try {
+	try {
 
-        Return $Null -Ne $Object -And $Object.Count -Gt 1
+		return $Null -eq $Object
 
-    } Catch {
+	} catch {
 
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
 
-    }
-
-}
-
-Function Test-CollectionOrNullObject {
-
-    Param(
-        [Object]$Object = $Null,
-        [Switch]$Silent
-    )
-
-    Try {
-
-        Return $Null -Eq $Object -Or $Object.Count -Gt 1
-
-    } Catch {
-
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
-
-    }
+	}
 
 }
 
-Function Test-Properties {
+function Test-SingleObject {
 
-    Param (
-        [Parameter(Mandatory = $True)][Object]$Object,
-        [Parameter(Mandatory = $True, ValueFromRemainingArguments = $True)][String[]]$Properties,
-        [Switch]$AllowNull,
-        [Switch]$Silent
-    )
+	param(
+		[Object]$Object = $Null,
+		[Switch]$Silent
+	)
 
-    Try {
+	try {
 
-        ForEach ($Property in $Properties) {
+		return $Null -ne $Object -and $Object.Count -eq 1
 
-            If (-Not ($Object.PSObject.Properties.Name -Contains $Property)) { Return $False }
-            If (-Not $AllowNull -And $Null -Eq $Object.$Property) { Return $False }
+	} catch {
 
-        }
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
 
-        Return $True
-
-    } Catch {
-
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
-
-    }
+	}
 
 }
 
-Function Write-Message {
+function Test-SingleOrNullObject {
 
-    Param (
-        [String]$Message,
-        [String]$Color,
-        [Switch]$Silent,
-        [Switch]$NoNewLine,
-        [Boolean]$Condition = $True
-    )
+	param(
+		[Object]$Object = $Null,
+		[Switch]$Silent
+	)
 
-    If (-Not $Silent) {
+	try {
+
+		return $Null -eq $Object -or $Object.Count -eq 1
+
+	} catch {
+
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
+
+	}
+
+}
+
+function Test-CollectionObject {
+
+	param(
+		[Object]$Object = $Null,
+		[Switch]$Silent
+	)
+
+	try {
+
+		return $Null -ne $Object -and $Object.Count -gt 1
+
+	} catch {
+
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
+
+	}
+
+}
+
+function Test-CollectionOrNullObject {
+
+	param(
+		[Object]$Object = $Null,
+		[Switch]$Silent
+	)
+
+	try {
+
+		return $Null -eq $Object -or $Object.Count -gt 1
+
+	} catch {
+
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
+
+	}
+
+}
+
+function Test-Properties {
+
+	param (
+		[Parameter(Mandatory = $True)][Object]$Object,
+		[Parameter(Mandatory = $True, ValueFromRemainingArguments = $True)][String[]]$Properties,
+		[Switch]$AllowNull,
+		[Switch]$Silent
+	)
+
+	try {
+
+		foreach ($Property in $Properties) {
+
+			if (-not ($Object.PSObject.Properties.Name -contains $Property)) { return $False }
+			if (-not $AllowNull -and $Null -eq $Object.$Property) { return $False }
+
+		}
+
+		return $True
+
+	} catch {
+
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
+
+	}
+
+}
+
+function Write-Message {
+
+	param (
+		[String]$Message,
+		[String]$Color,
+		[Switch]$Silent,
+		[Switch]$NoNewLine,
+		[Boolean]$Condition = $True
+	)
+
+	if (-not $Silent) {
         
-        If ($Condition) {
+		if ($Condition) {
             
-            Write-Host $Message -ForegroundColor $Color -NoNewline:$NoNewLine
+			Write-Host $Message -ForegroundColor $Color -NoNewline:$NoNewLine
         
-        }
+		}
     
-    }
+	}
 
 }
 
-Function Invoke-Operation {
+function Invoke-Operation {
 
-    Param(
-        [Parameter(Mandatory = $True)][String]$Message,
-        [Parameter(Mandatory = $True)][ScriptBlock]$Operation,
-        [Switch]$Return,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(Mandatory = $True)][String]$Message,
+		[Parameter(Mandatory = $True)][ScriptBlock]$Operation,
+		[Switch]$Return,
+		[Switch]$DisplayInfos,
+		[Switch]$SuppressErrors,
+		[Switch]$Silent
+	)
 
-    Try {
+	try {
         
-        Write-Message "$($Message)... " -Color "Cyan" -Silent:$Silent -NoNewline
+		Write-Message "$($Message)... " -Color "Cyan" -Silent:$Silent -NoNewline
         
-        $Output = & $Operation *>&1
+		$Output = & $Operation *>&1
 
-        Write-Message "success!" -Color "Green" -Silent:$Silent
+		Write-Message "success!" -Color "Green" -Silent:$Silent
 
-        Write-Message $Output -Color "Gray" -Condition:$DisplayInfos -Silent:$Silent
+		Write-Message $Output -Color "Gray" -Condition:$DisplayInfos -Silent:$Silent
 
-        If ($Return) { Return $Output }
+		if ($Return) { return $Output }
 
-        $Output
+		$Output
 
-    } Catch {
+	} catch {
 
-        Write-Message "failed!" -Color "Magenta" -Silent:$Silent
+		Write-Message "failed!" -Color "Magenta" -Silent:$Silent
         
-        Write-Message $Output -Color "Gray" -Condition:$DisplayInfos -Silent:$Silent
+		Write-Message $Output -Color "Gray" -Condition:$DisplayInfos -Silent:$Silent
 
-        Write-Message $_.Exception.Message -Color "Red" -Condition:(!$SuppressErrors) -Silent:$Silent
+		Write-Message $_.Exception.Message -Color "Red" -Condition:(!$SuppressErrors) -Silent:$Silent
 
-        If ($Return) { Return $Null }
+		if ($Return) { return $Null }
 
-        $Output
+		$Output
 
-    }
+	}
 
 }

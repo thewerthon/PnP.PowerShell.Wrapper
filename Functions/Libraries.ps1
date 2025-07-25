@@ -1,144 +1,144 @@
-Function Test-Library {
+function Test-Library {
 
-    Param(
-        [Parameter(ValueFromPipeline = $True)][Object]$Library,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(ValueFromPipeline = $True)][Object]$Library,
+		[Switch]$Silent
+	)
 
-    Try {
+	try {
 
-        If (-Not ((Test-SingleObject $Library -Silent:$Silent) -And (Test-Properties $Library Id, Title, DefaultViewUrl -Silent:$Silent) -And ($Library.BaseType -Eq "DocumentLibrary"))) {
+		if (-not ((Test-SingleObject $Library -Silent:$Silent) -and (Test-Properties $Library Id, Title, DefaultViewUrl -Silent:$Silent) -and ($Library.BaseType -eq "DocumentLibrary"))) {
 
-            Write-Message "Invalid library." -Color "Red" -Silent:$Silent
-            Return $False
+			Write-Message "Invalid library." -Color "Red" -Silent:$Silent
+			return $False
 
-        } Else {
+		} else {
 
-            Return $True
+			return $True
 
-        }
+		}
 
-    } Catch {
+	} catch {
 
-        Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
-        Return $False
+		Write-Message $_.Exception.Message -Color "Red" -Silent:$Silent
+		return $False
 
-    }
-
-}
-
-Function Get-Libraries {
-
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
-    )
-
-    Begin {
-
-        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
-        
-    }
-
-    Process {
-
-        $Connection = Connect-Site $Site -Return -Silent
-        $Libraries = Get-PnPList -Connection $Connection | Where-Object { $_.Hidden -Eq $False -And $_.IsCatalog -Eq $False -And $_.BaseType -Eq "DocumentLibrary" }
-
-        Return $Libraries | ForEach-Object {
-
-            $_
-            | Add-Member -NotePropertyName "Type" -NotePropertyValue "Library" -PassThru
-            | Add-Member -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
-
-        }
-
-    }
+	}
 
 }
 
-Function Get-Library {
+function Get-Libraries {
 
-    Param(
-        [Parameter(Mandatory = $True)][String]$Identity,
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
-    )
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+	)
 
-    Process {
+	begin {
+
+		if (-not (Test-TenantConnection -Silent:$Silent)) { return }
         
-        $Library = Get-Libraries $Site | Where-Object { $_.Id -Like $Identity -Or $_.RootFolder.ServerRelativeUrl -Like $Identity -Or $_.Title -Like $Identity }
-        If ($Library) { Return $Library[0] }
+	}
 
-    }
+	process {
+
+		$Connection = Connect-Site $Site -Return -Silent
+		$Libraries = Get-PnPList -Connection $Connection | Where-Object { $_.Hidden -eq $False -and $_.IsCatalog -eq $False -and $_.BaseType -eq "DocumentLibrary" }
+
+		return $Libraries | ForEach-Object {
+
+			$_
+			| Add-Member -NotePropertyName "Type" -NotePropertyValue "Library" -PassThru
+			| Add-Member -NotePropertyName "ParentSite" -NotePropertyValue $Site -PassThru
+
+		}
+
+	}
 
 }
 
-Function Set-Library {
+function Get-Library {
 
-    Param(
-        [Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Library,
-        [Switch]$DisplayInfos,
-        [Switch]$SuppressErrors,
-        [Switch]$Silent
-    )
+	param(
+		[Parameter(Mandatory = $True)][String]$Identity,
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Site
+	)
 
-    Begin {
-
-        If (-Not (Test-TenantConnection -Silent:$Silent)) { Return }
+	process {
         
-    }
+		$Library = Get-Libraries $Site | Where-Object { $_.Id -like $Identity -or $_.RootFolder.ServerRelativeUrl -like $Identity -or $_.Title -like $Identity }
+		if ($Library) { return $Library[0] }
 
-    Process {
+	}
 
-        Invoke-Operation -Message "Setting parameters to library: $($Library.ParentSite.Title) - $($Library.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
+}
+
+function Set-Library {
+
+	param(
+		[Parameter(Mandatory = $True, ValueFromPipeline = $True)][Object]$Library,
+		[Switch]$DisplayInfos,
+		[Switch]$SuppressErrors,
+		[Switch]$Silent
+	)
+
+	begin {
+
+		if (-not (Test-TenantConnection -Silent:$Silent)) { return }
+        
+	}
+
+	process {
+
+		Invoke-Operation -Message "Setting parameters to library: $($Library.ParentSite.Title) - $($Library.Title)" -DisplayInfos:$DisplayInfos -SuppressErrors:$SuppressErrors -Silent:$Silent -Operation {
             
-            $Connection = Connect-Site $Library.ParentSite -Return -Silent
-            If ($Library.ParentSite.LockState -Eq "ReadOnly") { Start-Sleep -Milliseconds 50; Return }
+			$Connection = Connect-Site $Library.ParentSite -Return -Silent
+			if ($Library.ParentSite.LockState -eq "ReadOnly") { Start-Sleep -Milliseconds 50; return }
 
-            $LibraryParams = @{
-                DraftVersionVisibility          = "Reader"
-                EnableAutoExpirationVersionTrim = $True
-                EnableMinorVersions             = $False
-                EnableModeration                = $False
-                EnableVersioning                = $True
-                ForceCheckout                   = $False
-                ListExperience                  = "Auto"
-                OpenDocumentsMode               = "ClientApplication"
-            }
+			$LibraryParams = @{
+				DraftVersionVisibility          = "Reader"
+				EnableAutoExpirationVersionTrim = $True
+				EnableMinorVersions             = $False
+				EnableModeration                = $False
+				EnableVersioning                = $True
+				ForceCheckout                   = $False
+				ListExperience                  = "Auto"
+				OpenDocumentsMode               = "ClientApplication"
+			}
 
-            If ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Documentos/Atuais")) {
+			if ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Documentos/Atuais")) {
                 
-                $LibraryParams = @{
-                    DraftVersionVisibility          = "Author"
-                    EnableAutoExpirationVersionTrim = $True
-                    EnableMinorVersions             = $True
-                    EnableModeration                = $True
-                    EnableVersioning                = $True
-                    ForceCheckout                   = $True
-                    ListExperience                  = "Auto"
-                    OpenDocumentsMode               = "ClientApplication"
-                }
+				$LibraryParams = @{
+					DraftVersionVisibility          = "Author"
+					EnableAutoExpirationVersionTrim = $True
+					EnableMinorVersions             = $True
+					EnableModeration                = $True
+					EnableVersioning                = $True
+					ForceCheckout                   = $True
+					ListExperience                  = "Auto"
+					OpenDocumentsMode               = "ClientApplication"
+				}
 
-            }
+			}
             
-            If ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Registros/Atuais")) {
+			if ($Library.RootFolder.ServerRelativeUrl.EndsWith("/Registros/Atuais")) {
                 
-                $LibraryParams = @{
-                    DraftVersionVisibility          = "Author"
-                    EnableAutoExpirationVersionTrim = $True
-                    EnableMinorVersions             = $False
-                    EnableModeration                = $False
-                    EnableVersioning                = $True
-                    ForceCheckout                   = $False
-                    ListExperience                  = "Auto"
-                    OpenDocumentsMode               = "ClientApplication"
-                }
+				$LibraryParams = @{
+					DraftVersionVisibility          = "Author"
+					EnableAutoExpirationVersionTrim = $True
+					EnableMinorVersions             = $False
+					EnableModeration                = $False
+					EnableVersioning                = $True
+					ForceCheckout                   = $False
+					ListExperience                  = "Auto"
+					OpenDocumentsMode               = "ClientApplication"
+				}
 
-            }
+			}
 
-            Set-PnPList -Identity $Library.Id @LibraryParams -Connection $Connection | Out-Null
+			Set-PnPList -Identity $Library.Id @LibraryParams -Connection $Connection | Out-Null
 
-        }
+		}
         
-    }
+	}
     
 }
