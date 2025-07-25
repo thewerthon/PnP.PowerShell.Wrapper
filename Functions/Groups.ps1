@@ -66,7 +66,7 @@ function Get-GroupsMembers {
 				
 			}
 
-			if ($Owners.Count -eq 0 -and $Members.Count -eq 0) {
+			if ($Owners.Count -eq 0 -and $Members.Count -eq 0 -and $Visitors.Count -eq 0) {
 				$ExportList += [PSCustomObject]@{
 					Id    = $Group.Id
 					Group = $Group.DisplayName
